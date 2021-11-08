@@ -1,0 +1,17 @@
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.002,deeppoly,41.005047082901 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.002,blk3_blksum,19.191462516784668 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.002,blk3_inputsum,18.21815061569214 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.004,deeppoly,40.08349943161011 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.004,blk3_blksum,19.042545557022095 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.004,blk3_inputsum,18.225496292114258 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.006,deeppoly,41.772422552108765 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.006,blk3_blksum,19.478307247161865 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.006,blk3_inputsum,18.73883843421936 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.008,deeppoly,40.91842842102051 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.008,blk3_blksum,19.757878065109253 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.008,blk3_inputsum,17.602840662002563 secs,8
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.01,deeppoly,41.82921266555786 secs,-1
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.01,blk3_blksum,19.420647144317627 secs,-1
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.01,blk3_inputsum,18.36786937713623 secs,-1
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.012,deeppoly,42.862152338027954 secs,-1
+convBigRELU__DiffAI.pyt,cifar10,img 1 with label 8,eps=0.012,blk3_blksum,19.372511863708496 secs,-1

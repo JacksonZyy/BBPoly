@@ -1,0 +1,16 @@
+*.a       # 忽略所有 .a 结尾的文件
+*.o       # 忽略所有.o的compile文件
+*.pyc   
+!lib.a    # 但 lib.a 除外（排除）
+/TODO     # 仅仅忽略项目根目录下的 TODO 文件，不包括 subdir/TODO
+build/    # 忽略 build/ 目录下的所有文件
+.libs/
+lib/
+cddlib-0.94j/
+gmp-6.1.2/
+gurobi900/linux64/
+m4-1.4.1/
+mpfr-4.1.0/
+test_nns/
+data/mnist_test_full.csv
+data/cifar10_test_full.csv
