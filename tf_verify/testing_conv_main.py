@@ -6,7 +6,6 @@ sys.path.insert(0, '../deepg/code/')
 import numpy as np
 from eran import ERAN
 from read_net_file import *
-from read_zonotope_file import read_zonotope
 import tensorflow as tf
 import csv
 import random
