@@ -1,4 +1,4 @@
-BBPoly instantiated on ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz.ch/img/sri-logo.svg">
+BBPoly instantiated on ERAN
 ========
 
 BBPoly is a scalabel and module robustness verification tool which is instantiated on DeepPoly domain in ETH Robustness Analyzer for Neural Networks (ERAN). BBPoly provides incomplete verification of MNIST, CIFAR10 based networks can be tuned to achieve trade-off between precision and scalability (see recommended configuration settings at the bottom). 
@@ -75,9 +75,8 @@ rm cddlib-0.94j.tar.gz
 
 ```
 
-Install ELINA:
+Compile ELINA:
 ```
-git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
 ./configure -use-deeppoly
 make
@@ -119,7 +118,7 @@ cd ../..
 
 ```
 
-We also provide scripts that will install ELINA and all the necessary dependencies. One can run it as follows:
+We also provide scripts that will compile ELINA and all the necessary dependencies. One can run it as follows:
 
 ```
 sudo ./install.sh
@@ -128,7 +127,7 @@ source gurobi_setup_path.sh
 ```
 
 
-Note that to run ERAN with Gurobi one needs to obtain an academic license for gurobi from https://user.gurobi.com/download/licenses/free-academic.
+Note that to run the system with Gurobi one needs to obtain an academic license for gurobi from https://user.gurobi.com/download/licenses/free-academic.
 
 To install the remaining python dependencies (numpy and tensorflow), type:
 
@@ -136,7 +135,7 @@ To install the remaining python dependencies (numpy and tensorflow), type:
 pip3 install -r requirements.txt
 ```
 
-ERAN may not be compatible with older versions of tensorflow (we have tested ERAN with versions >= 1.11.0), so if you have an older version and want to keep it, then we recommend using the python virtual environment for installing tensorflow.
+BBPoly may not be compatible with older versions of tensorflow (according to ERAN system), so if you have an older version and want to keep it, then we recommend using the python virtual environment for installing tensorflow.
 
 
 Usage
