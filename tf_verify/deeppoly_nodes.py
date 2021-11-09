@@ -370,7 +370,7 @@ class DeeppolyConv2dNode:
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        #print("Deeppoly node call handle_convolutional_layer with flag two_lbs equals to ", layer_by_layer)
+        #print("Deeppoly node call handle_convolutional_layer with flag layer_by_layer equals to ", layer_by_layer)
         handle_convolutional_layer(man, element, *self.get_arguments(), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
         #print("End handle_convolutional_layer")
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)

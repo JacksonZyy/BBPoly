@@ -220,7 +220,7 @@ parser.add_argument('--savepath', type=str, default=None, help='csv filename to 
 parser.add_argument('--ffdnet', type=str2bool, default=False,  help='flag to set deeppoly to over-approximate ffdnet')
 parser.add_argument('--is_rgb', type=str2bool, default=False,  help='flag to that the image is rgb or not')
 parser.add_argument("--noise_sigma", type=float, default=25, help='Denoise level used on FFDNet')
-parser.add_argument('--two_lbs', type=str2bool, default=False,  help='flag to allow two symbolic lower bounds or not')
+parser.add_argument('--layer_by_layer', type=str2bool, default=False,  help='flag to allow two symbolic lower bounds or not')
 parser.add_argument('--is_residual', type=str2bool, default=False,  help='flag to allow variable cancellation based merging or not')
 parser.add_argument('--blk_size', type=int, default=0,  help='How many layers we backsubstitue before we apply the zero-heuristics')
 parser.add_argument('--is_blk_segmentation', type=str2bool, default=False,  help='flag to allow is_blk_segmentation to select the constraints')

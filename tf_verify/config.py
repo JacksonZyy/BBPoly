@@ -19,6 +19,13 @@ class config:
     timeout_lp = 1 # timeout for the LP solver
     timeout_milp = 1 # timeout for the MILP solver
     use_default_heuristic = True # whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation
+    layer_by_layer = False
+    is_residual = False
+    blk_size = 0
+    is_blk_segmentation = False
+    is_early_terminate = False
+    early_termi_thre = 0
+    is_sum_def_over_input = False
     mean = None # the mean used to normalize the data with
     std = None # the standard deviation used to normalize the data with
     num_tests = None # Number of images to test
