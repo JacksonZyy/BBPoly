@@ -199,7 +199,7 @@ Publications
 -------------
 *  [Scalable and Modular Robustness Analysis of Deep Neural Networks](https://link.springer.com/chapter/10.1007/978-3-030-89051-3_1)
 
-   Yuyi Zhong,  Quang-Trung Ta, Tianzuo Luo, Fanlong Zhang,  Siau-Cheng Khoo
+   Yuyi Zhong,  Quang-Trung Ta, Tianzuo Luo, Fanlong Zhang,  Siau-Cheng Khoo.
    
    APLAS 2021.
 
@@ -214,7 +214,7 @@ References
 
 *  [Improving Neural Network Verification through Spurious Region Guided Refinement](https://link.springer.com/chapter/10.1007%2F978-3-030-72016-2_21).
 
-    Pengfei Yang, Renjue Li, Jianlin Li, Cheng-Chao Huang, Jingyi Wang, Jun Sun, Bai Xue, and Lijun Zhang
+    Pengfei Yang, Renjue Li, Jianlin Li, Cheng-Chao Huang, Jingyi Wang, Jun Sun, Bai Xue, and Lijun Zhang.
 
     TACAS 2021.
 
