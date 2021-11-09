@@ -166,11 +166,11 @@ wget https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_9_200.t
 python3 . --netname mnist_relu_9_200.tf --epsilon 0.005 --dataset mnist --blk_size 3 --is_blk_segmentation True 
 ```
 
-will evaluate the local robustness of the MNIST fully-connected network with ReLU activation. We have 100 MNIST test images, where robustness if only verified for those images that are classifies correctly by the network. In the above setting, epsilon=0.005, we segment the network every time we accumulate three affine layers and the block type is default (block summary). Our analyzer will print the following:
+will evaluate the local robustness of the MNIST fully-connected network with ReLU activation. We have 100 MNIST test images, where robustness is only verified for those images that are classifed correctly by the network. In the above setting, epsilon=0.005, we segment the network every time we accumulate three affine layers and the block type is default (block summary). Our analyzer will print the following:
 
 * 'analysis precision', which is the ratio of images on which the network is robust versus the number of images on which it classifies correctly (also named as candidate images).
 
-* 'average execution time', which the average running time (in seconds) for candidate images.
+* 'average execution time', which is the average running time (in seconds) for candidate images.
 
 
 L_oo Specification for BBPoly (input summmary) execution
@@ -185,7 +185,7 @@ L_oo Specification for DeepPoly execution
 ```
 python3 . --netname mnist_relu_9_200.tf --epsilon 0.005 --dataset mnist
 ```
-The default execution mode is DeepPoly, for details of DeepPoly, please refer to [POPL' 19](https://www.sri.inf.ethz.ch/publications/singh2019domain). 
+is the default execution mode (DeepPoly), for details of DeepPoly, please refer to [POPL' 19](https://www.sri.inf.ethz.ch/publications/singh2019domain). 
 
 Stress testing for DeepPoly vs BBPoly(block summmary) vs BBPoly(input summmary)
 
