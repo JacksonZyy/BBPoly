@@ -33,7 +33,6 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-
 def isnetworkfile(fname):
     _, ext = os.path.splitext(fname)
     if ext not in ['.pyt', '.meta', '.tf','.onnx', '.pb']:
@@ -91,7 +90,6 @@ def parse_input_box(text):
     boxes = itertools.product(*intervals_list)
     return boxes
 
-
 def show_ascii_spec(lb, ub, n_rows, n_cols, n_channels):
     print('==================================================================')
     for i in range(n_rows):
@@ -103,7 +101,6 @@ def show_ascii_spec(lb, ub, n_rows, n_cols, n_channels):
             print('#' if ub[n_cols*n_channels*i+j*n_channels] >= 0.5 else ' ', end='')
         print('  |  ')
     print('==================================================================')
-
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
     # normalization taken out of the network
@@ -121,7 +118,6 @@ def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, u
         for i in range(len(lexpr_weights)):
             lexpr_weights[i] /= stds[(i // num_params) % 3]
             uexpr_weights[i] /= stds[(i // num_params) % 3]
-
 
 def denormalize(image, means, stds, dataset):
     if dataset == 'mnist'  or dataset == 'fashion':
@@ -162,7 +158,6 @@ def get_tests(dataset, geometric):
         csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
     tests = csv.reader(csvfile, delimiter=',')
     return tests
-
 
 def init_domain(d):
     if d == 'refinezono':
@@ -208,19 +203,9 @@ def segment_network(model):
 parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--netname', type=isnetworkfile, default=config.netname, help='the network name, the extension can be only .pb, .pyt, .tf, .meta, and .onnx')
 parser.add_argument('--epsilon', type=float, default=config.epsilon, help='the epsilon for L_infinity perturbation')
+parser.add_argument('--dataset', type=str, default=config.dataset, help='the dataset, can be either mnist, cifar10')
 ############## My parser
-parser.add_argument('--small_epsilon', type=float, default=None, help='the epsilon for small perturbation pixels')
-parser.add_argument('--sig_beta', type=float, default=None, help='the beta for significant perturbation pixels')
-parser.add_argument('--left_bottom_corner', type=int, nargs=2, default=None, help='the left botton corner of the rectangular region, x axis and y axis')
-parser.add_argument('--right_up_corner', type=int, nargs=2, default= None, help='the right up corner of the rectangular region, x axis and y axis')
-parser.add_argument('--search_region', type=str2bool, default=None,  help='flag specifying where to search the significant perturbed region or not')
-parser.add_argument('--fb_threshold', type=float, default=None, help='the threshold to distinguish the region')
-parser.add_argument('--region_above_thre', type=str2bool, default=None, help='the region is the part above the threshold or below the threshold')
-parser.add_argument('--savepath', type=str, default=None, help='csv filename to store the experiment result')
-parser.add_argument('--ffdnet', type=str2bool, default=False,  help='flag to set deeppoly to over-approximate ffdnet')
-parser.add_argument('--is_rgb', type=str2bool, default=False,  help='flag to that the image is rgb or not')
-parser.add_argument("--noise_sigma", type=float, default=25, help='Denoise level used on FFDNet')
-parser.add_argument('--layer_by_layer', type=str2bool, default=False,  help='flag to allow two symbolic lower bounds or not')
+parser.add_argument('--layer_by_layer', type=str2bool, default=False,  help='Will the analysis be conducted layer by layer?')
 parser.add_argument('--is_residual', type=str2bool, default=False,  help='flag to allow variable cancellation based merging or not')
 parser.add_argument('--blk_size', type=int, default=0,  help='How many layers we backsubstitue before we apply the zero-heuristics')
 parser.add_argument('--is_blk_segmentation', type=str2bool, default=False,  help='flag to allow is_blk_segmentation to select the constraints')
@@ -230,31 +215,9 @@ parser.add_argument('--is_sum_def_over_input', type=str2bool, default=False,  he
 parser.add_argument('--stage_layer_num', type=int, default=None,  help='The number of how many layers in one block during segmentation, the default is None meaning that there is no staging included')
 parser.add_argument('--stage_block_num', type=int, default=None,  help='The number of how many block we will have after segmentation, the default is None')
 ############ End of my parserssss
-parser.add_argument('--zonotope', type=str, default=config.zonotope, help='file to specify the zonotope matrix')
-parser.add_argument('--specnumber', type=int, default=config.specnumber, help='the property number for the acasxu networks')
-parser.add_argument('--domain', type=str, default=config.domain, help='the domain name can be either deepzono, refinezono, deeppoly or refinepoly')
-parser.add_argument('--dataset', type=str, default=config.dataset, help='the dataset, can be either mnist, cifar10, acasxu, or fashion')
-parser.add_argument('--complete', type=str2bool, default=config.complete,  help='flag specifying where to use complete verification or not')
-parser.add_argument('--timeout_lp', type=float, default=config.timeout_lp,  help='timeout for the LP solver')
-parser.add_argument('--timeout_milp', type=float, default=config.timeout_milp,  help='timeout for the MILP solver')
-parser.add_argument('--numproc', type=int, default=config.numproc,  help='number of processes for MILP / LP / k-ReLU')
 parser.add_argument('--use_default_heuristic', type=str2bool, default=config.use_default_heuristic,  help='whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation')
-parser.add_argument('--use_milp', type=str2bool, default=config.use_milp,  help='whether to use milp or not')
-parser.add_argument('--dyn_krelu', action='store_true', default=None, help='dynamically select parameter k')
-parser.add_argument('--use_2relu', action='store_true', default=None, help='use 2-relu')
-parser.add_argument('--use_3relu', action='store_true', default=None, help='use 3-relu')
 parser.add_argument('--mean', nargs='+', type=float, default=config.mean, help='the mean used to normalize the data with')
 parser.add_argument('--std', nargs='+', type=float, default=config.std, help='the standard deviation used to normalize the data with')
-parser.add_argument('--data_dir', type=str, default=config.data_dir, help='data location')
-parser.add_argument('--geometric_config', type=str, default=config.geometric_config, help='config location')
-parser.add_argument('--num_params', type=int, default=config.num_params, help='Number of transformation parameters')
-parser.add_argument('--num_tests', type=int, default=config.num_tests, help='Number of images to test')
-parser.add_argument('--from_test', type=int, default=config.from_test, help='Number of images to test')
-parser.add_argument('--debug', action='store_true', default=config.debug, help='Whether to display debug info')
-parser.add_argument('--attack', action='store_true', default=config.attack, help='Whether to attack')
-parser.add_argument('--geometric', '-g', dest='geometric', default=config.geometric, action='store_true', help='Whether to do geometric analysis')
-parser.add_argument('--input_box', default=config.input_box,  help='input box to use')
-parser.add_argument('--output_constraints', default=config.output_constraints, help='custom output constraints to check')
 
 
 # Logging options
@@ -268,15 +231,7 @@ for k, v in vars(args).items():
     setattr(config, k, v) #takes three parameters:object whose attributes to be set, attribute name, attribute name
 config.json = vars(args)
 
-if config.specnumber and not config.input_box and not config.output_constraints:
-    config.input_box = '../data/acasxu/specs/acasxu_prop_' + str(config.specnumber) + '_input_prenormalized.txt'
-    config.output_constraints = '../data/acasxu/specs/acasxu_prop_' + str(config.specnumber) + '_constraints.txt'
-
 assert config.netname, 'a network has to be provided for analysis.'
-
-#if len(sys.argv) < 4 or len(sys.argv) > 5:
-#    print('usage: python3.6 netname epsilon domain dataset')
-#    exit(1)
 
 netname = config.netname
 filename, file_extension = os.path.splitext(netname)
@@ -290,39 +245,12 @@ assert is_trained_with_pytorch or is_saved_tf_model or is_pb_file or is_tensorfl
 
 epsilon = config.epsilon
 assert (epsilon >= 0) and (epsilon <= 1), "epsilon can only be between 0 and 1"
-
-zonotope_file = config.zonotope
-zonotope = None
-zonotope_bool = (zonotope_file!=None)
-if zonotope_bool:
-    zonotope = read_zonotope(zonotope_file)
-
-domain = config.domain
-
-if zonotope_bool:
-    assert domain in ['deepzono', 'refinezono'], "domain name can be either deepzono or refinezono"
-elif not config.geometric:
-    assert domain in ['deepzono', 'refinezono', 'deeppoly', 'refinepoly'], "domain name can be either deepzono, refinezono, deeppoly or refinepoly"
-
 dataset = config.dataset
-
-if zonotope_bool==False:
-   assert dataset in ['mnist', 'cifar10', 'acasxu', 'fashion'], "only mnist, cifar10, acasxu, and fashion datasets are supported"
-
-constraints = None
-if config.output_constraints:
-    constraints = get_constraints_from_file(config.output_constraints)
-
+assert dataset in ['mnist', 'cifar10'], "only mnist, cifar10 datasets are supported"
 mean = 0
 std = 0
 is_conv = False
-
-complete = (config.complete==True)
-
-if(dataset=='acasxu'):
-    print("netname ", netname, " specnumber ", config.specnumber, " domain ", domain, " dataset ", dataset, "args complete ", config.complete, " complete ",complete, " timeout_lp ",config.timeout_lp)
-else:
-    print("netname ", netname, " epsilon ", epsilon, " domain ", domain, " dataset ", dataset, "args complete ", config.complete, " complete ",complete, " timeout_lp ",config.timeout_lp)
+print("netname ", netname, " epsilon ", epsilon, " domain ", 'deeppoly', " dataset ", dataset)
 
 non_layer_operation_types = ['NoOp', 'Assign', 'Const', 'RestoreV2', 'SaveV2', 'PlaceholderWithDefault', 'IsVariableInitialized', 'Placeholder', 'Identity']
 
@@ -348,16 +276,11 @@ if is_saved_tf_model or is_pb_file:
     while ops[last_layer_index].type in non_layer_operation_types:
         last_layer_index -= 1
     eran = ERAN(sess.graph.get_tensor_by_name(ops[last_layer_index].name + ':0'), sess)
-
 else:
-    if(zonotope_bool==True):
-        num_pixels = len(zonotope)
-    elif(dataset=='mnist'):
+    if(dataset=='mnist'):
         num_pixels = 784
     elif (dataset=='cifar10'):
         num_pixels = 3072
-    elif(dataset=='acasxu'):
-        num_pixels = 5
     if is_onnx:
         model, is_conv = read_onnx_net(netname)
         # this is to have different defaults for mnist and cifar10
@@ -366,12 +289,9 @@ else:
     eran = ERAN(model, is_onnx=is_onnx)
 
 if not is_trained_with_pytorch:
-    if dataset == 'mnist' and not config.geometric:
+    if dataset == 'mnist':
         means = [0]
         stds = [1]
-    elif dataset == 'acasxu':
-        means = [1.9791091e+04,0.0,0.0,650.0,600.0]
-        stds = [60261.0,6.28318530718,6.28318530718,1100.0,1200.0]
     else:
         means = [0.5, 0.5, 0.5]
         stds = [1, 1, 1]
@@ -381,26 +301,19 @@ is_trained_with_pytorch = is_trained_with_pytorch or is_onnx
 if config.mean is not None:
     means = config.mean
     stds = config.std
-correctly_classified_images = 0
-verified_images = 0
-
 
 if dataset:
-    if config.input_box is None:
-        tests = get_tests(dataset, config.geometric)
-    else:
-        tests = open(config.input_box, 'r').read()
+    tests = get_tests(dataset, config.geometric)
 
 net_name_list = netname.split("/")
 net_file = net_name_list[-1]
-epsilon = config.epsilon
 specLB = None
 specUB = None
 epsilon_list = None
 if dataset == 'mnist':
-    epsilon_list_conv = [0.02, 0.04, 0.06, 0.08, 0.1, 0.12]
+    epsilon_list_fcn = [0.005, 0.01, 0.015, 0.02, 0.025, 0.03]
 else:
-    epsilon_list_conv = [0.002, 0.004, 0.006, 0.008, 0.01, 0.012]
+    epsilon_list_fcn = [0.0002, 0.0004, 0.0006, 0.0008, 0.001, 0.0012]
     
 dp_count = 0
 blksum_count = 0
@@ -414,11 +327,11 @@ for i, test in enumerate(tests):
     specUB = np.copy(image)
     normalize(specLB, means, stds, dataset)
     normalize(specUB, means, stds, dataset)
-    eran_result = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+    eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
     dominant_class = eran_result[0]
     if(dominant_class == actual_label):
         candi_count = candi_count + 1
-        for epsilon in epsilon_list_conv:
+        for epsilon in epsilon_list_fcn:
             if config.normalized_region==True:
                 specLB = np.clip(image - epsilon,0,1)
                 specUB = np.clip(image + epsilon,0,1)
@@ -429,11 +342,11 @@ for i, test in enumerate(tests):
                 specUB = specUB + epsilon
 
 
-            lb_fullpath = "stress_test_result/labels_cifar_conv.csv"
+            lb_fullpath = "stress_test_result/labels_" + net_file.replace(".", "_") +".csv"
 
             # The old deeppoly execution 
             start = time.time() 
-            eran_result = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+            eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
             end = time.time()
             dominant_class = eran_result[0]
             if(dominant_class == actual_label):
@@ -444,7 +357,7 @@ for i, test in enumerate(tests):
         
             # The execution of staging
             start = time.time()
-            eran_result = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, False, False, True, 3, False, False, False, False)
+            eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, False, False, True, 3, False, False, False, False)
             end = time.time()
             dominant_class = eran_result[0]
             if(dominant_class == actual_label):
@@ -454,7 +367,7 @@ for i, test in enumerate(tests):
                 csv_writer.writerow([net_file, str(dataset), "img "+str(i)+" with label "+str(actual_label), "eps="+str(epsilon), "blk3_blksum", str(end - start)+" secs", str(dominant_class)])
 
             start = time.time()
-            eran_result = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, False, False, True, 3, False, False, True, False)
+            eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, False, False, True, 3, False, False, True, False)
             end = time.time()
             dominant_class = eran_result[0]
             if(dominant_class == actual_label):
