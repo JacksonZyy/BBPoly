@@ -60,13 +60,7 @@ cd ..
 rm cddlib-0.94j.tar.gz
 
 cd ELINA
-if test "$has_cuda" -eq 1
-then
-    ./configure -use-cuda -use-deepoly
-else
-    ./configure -use-deeppoly
-fi
-
+./configure -use-deeppoly
 make
 make install
 cd ..
@@ -86,15 +80,9 @@ export GUROBI_HOME="$(pwd)/gurobi900/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
 
-cd deepg/code
-mkdir build
-make shared_object
-cp ./build/libgeometric.so /usr/lib
-cd ../..
-
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/lib
 
-wget https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_3_50.tf
+wget https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_9_200.tf
 
 ldconfig
 

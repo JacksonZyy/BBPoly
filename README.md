@@ -107,17 +107,6 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
 
 ```
 
-Install DeepG (note that with an already existing version of ERAN you have to start at step Install Gurobi):
-```
-git clone https://github.com/eth-sri/deepg.git
-cd deepg/code
-mkdir build
-make shared_object
-cp ./build/libgeometric.so /usr/lib
-cd ../..
-
-```
-
 We also provide scripts that will compile ELINA and all the necessary dependencies. One can run it as follows:
 
 ```
@@ -153,15 +142,15 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * ```<is_residual>```: whether the verification network is residual network or not (default is false).
 
-* ```<is_blk_segmentation>```: specifies if the analysis will be conducted in modular way, meaning that we will segment the network into blocks and leverage block summary to speed up the analysis process (default is false).
+* ```<is_blk_segmentation>```: specifies if the analysis will be conducted in a modular way, meaning that we will segment the network into blocks and leverage block summary to speed up the analysis process (default is false).
 
-* ```<blk_size>```: indicates how many affine layers is contained in one block (default is 0). We use this parameter to segment the network, therefore it is only meaningful if ```<is_blk_segmentation>``` is activated
+* ```<blk_size>```: indicates how many affine layers are contained in one block (default is 0). We use this parameter to segment the network, therefore it is only meaningful if ```<is_blk_segmentation>``` is activated
 
 * ```<is_early_terminate>```: whether to terminate the back-substitution process earlier (default is false).
 
 * ```<early_termi_thre>```: specifies the threhold of back-substitution steps, then we will terminate the back-substitution (default is 0). This parameter only makes sense if ```<is_early_terminate>``` is activated.
 
-* ```<is_sum_def_over_input>```: specifies if the block summary is defined over the actual input layer of the network or not, since we have two types of summary, input summary or block summary (check [our paper](https://link.springer.com/chapter/10.1007/978-3-030-89051-3_1) for detail).
+* ```<is_sum_def_over_input>```: specifies if the block summary is defined over the actual input layer of the network or not, since we have two types of summary, input summary or block summary (check [our paper](https://link.springer.com/chapter/10.1007/978-3-030-89051-3_1) for detail). The default value is false, so the default version of summary is block summary.
 
 * We aim to conduct abstract refinement when the verification fails, to either prove the robustness or find a counterexample to falsify the robustness, w.r.t. the whole input space. If we fail to conclude in the two ways mentioned above, we will try to return quantitative result. Those are the future features to be added in the system. 
 
