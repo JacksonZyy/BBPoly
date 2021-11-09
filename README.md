@@ -159,105 +159,64 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 Example
 -------------
 
-L_oo Specification
+L_oo Specification for BBPoly (block summmary) execution
 ```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --epsilon 0.1 --domain deepzono --dataset mnist
-```
-
-will evaluate the local robustness of the MNIST convolutional network (upto 35K neurons) with ReLU activation trained using DiffAI on the 100 MNIST test images. In the above setting, epsilon=0.1 and the domain used by our analyzer is the deepzono domain. Our analyzer will print the following:
-
-* 'Verified safe' for an image when it can prove the robustness of the network 
-
-* 'Verified unsafe' for an image for which it can provide a concrete adversarial example
-
-* 'Failed' when it cannot. 
-
-* It will also print an error message when the network misclassifies an image.
-
-* the timing in seconds.
-
-* The ratio of images on which the network is robust versus the number of images on which it classifies correctly.
- 
-
-Zonotope Specification
-```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --zonotope some_path/zonotope_example.txt --domain deepzono 
+cd tf_verify
+wget https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_9_200.tf
+python3 . --netname mnist_relu_9_200.tf --epsilon 0.005 --dataset mnist --blk_size 3 --is_blk_segmentation True 
 ```
 
-will check if the Zonotope specification specified in "zonotope_example" holds for the network and will output "Verified safe", "Verified unsafe" or "Failed" along with the timing.
+will evaluate the local robustness of the MNIST fully-connected network with ReLU activation. We have 100 MNIST test images, where robustness if only verified for those images that are classifies correctly by the network. In the above setting, epsilon=0.005, we segment the network every time we accumulate three affine layers and the block type is default (block summary). Our analyzer will print the following:
 
-Similarly, for the ACAS Xu networks, ERAN will output whether the property has been verified along with the timing.
+* 'analysis precision', which is the ratio of images on which the network is robust versus the number of images on which it classifies correctly (also named as candidate images).
+
+* 'average execution time', which the average running time (in seconds) for candidate images.
 
 
-ACASXu Specification
+L_oo Specification for BBPoly (input summmary) execution
 ```
-python3 . --netname ../data/acasxu/nets/ACASXU_run2a_3_3_batch_2000.onnx --dataset acasxu --domain deepzono  --specnumber 9
+python3 . --netname mnist_relu_9_200.tf --epsilon 0.005 --dataset mnist --blk_size 3 --is_blk_segmentation True --is_sum_def_over_input True
 ```
-will run DeepZ for analyzing property 9 of ACASXu benchmarks. The ACASXU networks are in data/acasxu/nets directory and the one chosen for a given property is defined in the Reluplex paper. 
 
-Geometric analysis
+will check robustness in a modular way, using input summary method.
+
+
+L_oo Specification for DeepPoly execution
+```
+python3 . --netname mnist_relu_9_200.tf --epsilon 0.005 --dataset mnist
+```
+The default execution mode is DeepPoly, for details of DeepPoly, please refer to [POPL' 19](https://www.sri.inf.ethz.ch/publications/singh2019domain). 
+
+Stress testing for DeepPoly vs BBPoly(block summmary) vs BBPoly(input summmary)
 
 ```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --geometric_config ../deepg/examples/example1/config.txt --num_params 1 --dataset mnist
+python3 testing_fcn_main.py --netname mnist_relu_9_200.tf --dataset mnist
 ```
-will on the fly generate geometric perturbed images and evaluate the network against them. For more information on the geometric configuration file please see [Format of the configuration file in DeepG](https://github.com/eth-sri/deepg#format-of-configuration-file).
-
-
-```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --data_dir ../deepg/examples/example1/ --num_params 1 --dataset mnist --attack
-```
-will evaluate the generated geometric perturbed images in the given data_dir and also evaluate generated attack images.
-
-
-Recommended Configuration for Scalable Complete Verification
----------------------------------------------------------------------------------------------
-Use the "deeppoly" or "deepzono" domain with "--complete True" option
-
-
-Recommended Configuration for More Precise but relatively expensive Incomplete Verification
-----------------------------------------------------------------------------------------------
-Use the "refinepoly" domain with "--use_milp True", "--sparse_n 12", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10" options
-
-Recommended Configuration for Faster but relatively imprecise Incomplete Verification
------------------------------------------------------------------------------------------------
-Use the "deeppoly" domain
+will run three methods at the same time, with various epsilon in a pre-defined epsilon list. The verification result and execution time for each method/epsilon/image will be recorded in a csv file.
 
 
 Publications
 -------------
-*  [Certifying Geometric Robustness of Neural Networks](https://www.sri.inf.ethz.ch/publications/balunovic2019geometric)
+*  [Scalable and Modular Robustness Analysis of Deep Neural Networks](https://link.springer.com/chapter/10.1007/978-3-030-89051-3_1)
 
-   Mislav Balunovic,  Maximilian Baader, Gagandeep Singh, Timon Gehr,  Martin Vechev
+   Yuyi Zhong,  Quang-Trung Ta, Tianzuo Luo, Fanlong Zhang,  Siau-Cheng Khoo
    
-   NeurIPS 2019.
+   APLAS 2021.
 
 
-*  [Beyond the Single Neuron Convex Barrier for Neural Network Certification](https://www.sri.inf.ethz.ch/publications/singh2019krelu).
-    
-    Gagandeep Singh, Rupanshu Ganvir, Markus Püschel, and Martin Vechev. 
-   
-    NeurIPS 2019.
-
-*  [Boosting Robustness Certification of Neural Networks](https://www.sri.inf.ethz.ch/publications/singh2019refinement).
-
-    Gagandeep Singh, Timon Gehr, Markus Püschel, and Martin Vechev. 
-
-    ICLR 2019.
-
-
+References
+-------------
 *  [An Abstract Domain for Certifying Neural Networks](https://www.sri.inf.ethz.ch/publications/singh2019domain).
 
     Gagandeep Singh, Timon Gehr, Markus Püschel, and Martin Vechev. 
 
     POPL 2019.
 
+*  [Improving Neural Network Verification through Spurious Region Guided Refinement](https://link.springer.com/chapter/10.1007%2F978-3-030-72016-2_21).
 
-*  [Fast and Effective Robustness Certification](https://www.sri.inf.ethz.ch/publications/singh2018effective). 
+    Pengfei Yang, Renjue Li, Jianlin Li, Cheng-Chao Huang, Jingyi Wang, Jun Sun, Bai Xue, and Lijun Zhang
 
-    Gagandeep Singh, Timon Gehr, Matthew Mirman, Markus Püschel, and Martin Vechev. 
-
-    NeurIPS 2018.
-
+    TACAS 2021.
 
 
 
