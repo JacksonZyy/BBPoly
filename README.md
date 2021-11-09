@@ -1,30 +1,12 @@
-ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz.ch/img/sri-logo.svg">
+BBPoly instantiated on ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz.ch/img/sri-logo.svg">
 ========
 
-![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/overview.png)
+BBPoly is a scalabel and module robustness verification tool which is instantiated on DeepPoly domain in ETH Robustness Analyzer for Neural Networks (ERAN). BBPoly provides incomplete verification of MNIST, CIFAR10 based networks can be tuned to achieve trade-off between precision and scalability (see recommended configuration settings at the bottom). 
 
-ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, scalable, and extensible analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation) for the complete and incomplete verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification and can be tuned to provide best precision and scalability (see recommended configuration settings at the bottom). ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify safety properties of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
+BBPoly currently supports networks with ReLU activation and is sound under floating point arithmetic. It employs the abstract domain designed in DeepPoly and leverages network block summary to balance scalability and precision. The description of our BBPoly system can be found in [APLAS'21](https://link.springer.com/chapter/10.1007/978-3-030-89051-3_1) or [arXiv preprint](https://arxiv.org/abs/2108.11651)
 
-ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN supports the following four analysis:
+For reference, ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/).
 
-* DeepZ [NIPS'18]: contains specialized abstract Zonotope transformers for handling ReLU, Sigmoid and Tanh activation functions.
-
-* DeepPoly [POPL'19]: based on a domain that combines floating point Polyhedra with Intervals.
-
-* RefineZono [ICLR'19]: combines DeepZ analysis with MILP and LP solvers for more precision. 
-
-* RefinePoly [NeurIPS'19]: combines DeepPoly analysis with MILP and k-ReLU framework for state-of-the-art precision while maintaining scalability.
-
-All analysis are implemented using the [ELINA](http://elina.ethz.ch/) library for numerical abstractions. More details can be found in the publications below. 
-
-ERAN vs AI2
---------------------
-Note that ERAN subsumes the first abstract interpretation based analyzer [AI2](https://www.sri.inf.ethz.ch/publications/gehr2018ai), so if you aim to compare, please use ERAN as a baseline. 
-
-
-USER MANUAL
---------------------
-For a detailed desciption of the options provided and the implentation of ERAN, you can download the [user manual](https://files.sri.inf.ethz.ch/eran/docs/eran_manual.pdf).
 
 Requirements 
 ------------
@@ -35,13 +17,13 @@ python3.6 or higher, tensorflow 1.11 or higher, numpy.
 
 Installation
 ------------
-Clone the ERAN repository via git as follows:
+Clone the BBPoly repository via git as follows:
 ```
-git clone https://github.com/eth-sri/ERAN.git
-cd ERAN
+git clone https://github.com/JacksonZyy/BBPoly.git
+cd BBPoly
 ```
 
-The dependencies for ERAN can be installed step by step as follows (sudo rights might be required):
+The dependencies for BBPoly can be installed step by step as follows (sudo rights might be required):
 
 Install m4:
 ```

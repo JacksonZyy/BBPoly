@@ -14,3 +14,5 @@ mpfr-4.1.0/
 test_nns/
 data/mnist_test_full.csv
 data/cifar10_test_full.csv
+install_geometric.sh
+overview.png
