@@ -144,45 +144,26 @@ Usage
 ```
 cd tf_verify
 
-python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono/refinepoly> --dataset <mnist/cifar10/acasxu> --zonotope <path to the zonotope specfile>  [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float> --use_area_heuristic <True/False> --mean <float(s)> --std <float(s)> --use_milp <True/False> --use_2relu --use_3relu --dyn_krelu --numproc <int>
+python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --dataset <mnist/cifar10> [optional] --layer_by_layer <True/False> --is_residual <True/False> --is_blk_segmentation <True/False> --blk_size <int> --is_early_terminate <True/False> --early_termi_thre <int> --is_sum_def_over_input <True/False>
 ```
 
-* ```<epsilon>```: specifies bound for the L∞-norm based perturbation (default is 0). This parameter is not required for testing ACAS Xu networks.
+* ```<epsilon>```: specifies bound for the L∞-norm based perturbation (default is 0). This parameter is not required for testing_conv/fcn_main.py execution, since an epsilon list is already provided in these two files.
 
-* ```<zonotope>```: The Zonotope specification file can be comma or whitespace separated file where the first two integers can specify the number of input dimensions D and the number of error terms per dimension N. The following D*N doubles specify the coefficient of error terms. For every dimension i, the error terms are numbered from 0 to N-1 where the 0-th error term is the central error term. See an example here [https://github.com/eth-sri/eran/files/3653882/zonotope_example.txt]. This option only works with the "deepzono" or "refinezono" domain.
+* ```<layer_by_layer>```: the flag indicating whether the back-substitution process will be conducted layer-by-layer or not. Should be used for abstract refinement only, the default value is false.
 
-* ```<use_area_heuristic>```: specifies whether to use area heuristic for the ReLU approximation in DeepPoly (default is true).
+* ```<is_residual>```: whether the verification network is residual network or not (default is false).
 
-* ```<mean>```: specifies mean used to normalize the data. If the data has multiple channels the mean for every channel has to be provided (e.g. for cifar10 --mean 0.485, 0.456, 0.406) (default is 0 for non-geometric mnist and 0.5 0.5 0.5 otherwise)
+* ```<is_blk_segmentation>```: specifies if the analysis will be conducted in modular way, meaning that we will segment the network into blocks and leverage block summary to speed up the analysis process (default is false).
 
-* ```<std>```: specifies standard deviation used to normalize the data. If the data has multiple channels the standard deviaton for every channel has to be provided (e.g. for cifar10 --std 0.2 0.3 0.2) (default is 1 1 1)
+* ```<blk_size>```: indicates how many affine layers is contained in one block (default is 0). We use this parameter to segment the network, therefore it is only meaningful if ```<is_blk_segmentation>``` is activated
 
-* ```<use_milp>```: specifies whether to use MILP (default is true).
+* ```<is_early_terminate>```: whether to terminate the back-substitution process earlier (default is false).
 
-* ```<sparse_n>```: specifies the size of "k" for the kReLU framework (default is 70).
+* ```<early_termi_thre>```: specifies the threhold of back-substitution steps, then we will terminate the back-substitution (default is 0). This parameter only makes sense if ```<is_early_terminate>``` is activated.
 
-* ```<numproc>```: specifies how many processes to use for MILP, LP and k-ReLU (default is the number of processors in your machine).
+* ```<is_sum_def_over_input>```: specifies if the block summary is defined over the actual input layer of the network or not, since we have two types of summary, input summary or block summary (check [our paper](https://link.springer.com/chapter/10.1007/978-3-030-89051-3_1) for detail).
 
-
-* ```<geometric>```: specifies whether to do geometric analysis (default is false).
-
-* ```<geometric_config>```: specifies the geometric configuration file location.
-
-* ```<data_dir>```: specifies the geometric data location.
-
-* ```<num_params>```: specifies the number of transformation parameters (default is 0)
-
-* ```<attack>```: specifies whether to verify attack images (default is false).
-
-* ```<specnumber>```: the property number for the ACASXu networks
-
-* Refinezono and RefinePoly refines the analysis results from the DeepZ and DeepPoly domain respectively using the approach in our ICLR'19 paper. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
-
-* Since Refinezono and RefinePoly uses timeout for the gurobi solver, the results will vary depending on the processor speeds. 
-
-* Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. 
-
-* When ERAN fails to prove the robustness of a given network in a specified region, it searches for an adversarial example and prints an adversarial image within the specified adversarial region along with the misclassified label and the correct label. ERAN does so for both complete and incomplete verification. 
+* We aim to conduct abstract refinement when the verification fails, to either prove the robustness or find a counterexample to falsify the robustness, w.r.t. the whole input space. If we fail to conclude in the two ways mentioned above, we will try to return quantitative result. Those are the future features to be added in the system. 
 
 
 
