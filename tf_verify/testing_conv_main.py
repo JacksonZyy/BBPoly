@@ -309,11 +309,13 @@ net_name_list = netname.split("/")
 net_file = net_name_list[-1]
 specLB = None
 specUB = None
-epsilon_list_fcn = None
+epsilon_list_conv = None
 if dataset == 'mnist':
-    epsilon_list_fcn = [0.005, 0.01, 0.015, 0.02, 0.025, 0.03]
+    epsilon_list_conv = [0.02, 0.04, 0.06, 0.08, 0.1, 0.12]
+    # epsilon_list_conv = [0.12, 0.14, 0.16, 0.18, 0.20, 0.22]
+    
 else:
-    epsilon_list_fcn = [0.0002, 0.0004, 0.0006, 0.0008, 0.001, 0.0012]
+    epsilon_list_conv = [0.002, 0.004, 0.006, 0.008, 0.01, 0.012]
     
 dp_count = 0
 blksum_count = 0
@@ -331,7 +333,7 @@ for i, test in enumerate(tests):
     dominant_class = eran_result[0]
     if(dominant_class == actual_label):
         candi_count = candi_count + 1
-        for epsilon in epsilon_list_fcn:
+        for epsilon in epsilon_list_conv:
             if config.normalized_region==True:
                 specLB = np.clip(image - epsilon,0,1)
                 specUB = np.clip(image + epsilon,0,1)
