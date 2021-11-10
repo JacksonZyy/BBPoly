@@ -266,11 +266,11 @@ In the following, we compare the precision of BBPoly and DeepPoly on fully-conne
 
 The table below compares the performance and precision of BBPoly and DeepPoly on our large CIFAR10 residual networks trained with DiffAI.  DeepPoly fails to verify any image within the timeout of 3 hours in our evaluation platform (indicated by ‘-’). The number of candidate images, verified images and the average execution time per image for our experiment are listed below, where column “BlkSum_4bound” refers to block-summarization method together with bounded back-substitution in four steps and “Input_Sum” refers to our summary-over-input method. 
 
-![High Level](imgs/res_tlb1.png)
+<!-- ![High Level](imgs/res_tlb1.png) -->
 
-![High Level](imgs/res_tlb2.png)
+![High Level](imgs/res_tlb3.png)
 
-More experimental results can be found in [our technical report](https://arxiv.org/abs/2108.11651).
+More experiment setups and experimental results can be found in [our technical report](https://arxiv.org/abs/2108.11651).
 
 Contributors
 --------------
