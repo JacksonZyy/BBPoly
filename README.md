@@ -159,7 +159,7 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 Example
 -------------
 
-L_oo Specification for BBPoly (block summmary) execution
+L_oo Specification for BBPoly (block summmary) execution:
 ```
 cd tf_verify
 wget https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_9_200.tf
@@ -173,7 +173,7 @@ will evaluate the local robustness of the MNIST fully-connected network with ReL
 * 'average execution time', which is the average running time (in seconds) for candidate images.
 
 
-L_oo Specification for BBPoly (input summmary) execution
+L_oo Specification for BBPoly (input summmary) execution:
 ```
 python3 . --netname mnist_relu_9_200.tf --epsilon 0.005 --dataset mnist --blk_size 3 --is_blk_segmentation True --is_sum_def_over_input True
 ```
@@ -181,13 +181,13 @@ python3 . --netname mnist_relu_9_200.tf --epsilon 0.005 --dataset mnist --blk_si
 will check robustness in a modular way, using input summary method.
 
 
-L_oo Specification for DeepPoly execution
+L_oo Specification for DeepPoly execution:
 ```
 python3 . --netname mnist_relu_9_200.tf --epsilon 0.005 --dataset mnist
 ```
 is the default execution mode (DeepPoly), for details of DeepPoly, please refer to [POPL' 19](https://www.sri.inf.ethz.ch/publications/singh2019domain). 
 
-Stress testing (fully-connected network) for DeepPoly vs BBPoly(block summmary) vs BBPoly(input summmary)
+Stress testing (fully-connected network) for DeepPoly vs BBPoly(block summmary) vs BBPoly(input summmary):
 
 ```
 python3 testing_fcn_main.py --netname mnist_relu_9_200.tf --dataset mnist
@@ -195,13 +195,13 @@ python3 testing_fcn_main.py --netname mnist_relu_9_200.tf --dataset mnist
 will run three methods at the same time, with various epsilon in a pre-defined epsilon list. The verification result and execution time for each method/epsilon/image will be recorded in a csv file.
 
 
-Stress testing (residual network) for BBPoly(block summmary) vs BBPoly(input summmary)
+Stress testing (residual network) for BBPoly(block summmary) vs BBPoly(input summmary):
 
 ```
 wget https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNet18_DiffAI.onnx
 python3 testing_res_main.py --netname ResNet18_DiffAI.onnx --dataset cifar10 --is_residual True
 ```
-will verify robustness for the residual network, with a pre-defined epsilon to be 8/255 (according to [GPUPoly setup](https://www.sri.inf.ethz.ch/publications/mller2021neural)). DeepPoly fails to terminate for selected residual networks within 3 hours timeout, so we compare between different methods in BBPoly. The analysis block for residual network is the intrinsic residual block, and we compare between BlkSum_4bound and Input_Sum methods in BBPoly. BlkSum_4bound refers to block summary method with early termination in 4 steps of back-substitution; Input_Sum refers to input summary method. The verification result and execution time for each method/epsilon/image will be recorded in a csv file. (You can use ```<nohup>``` command if the execution takes long time)
+will verify robustness for the residual network, with a pre-defined epsilon to be 8/255 (according to [GPUPoly setup](https://www.sri.inf.ethz.ch/publications/mller2021neural)). DeepPoly fails to terminate for selected residual networks within 3 hours timeout, so we compare between different methods in BBPoly. The analysis block for residual network is the intrinsic residual block, and we compare between BlkSum_4bound and Input_Sum methods in BBPoly. BlkSum_4bound refers to block summary method with early termination in 4 steps of back-substitution; Input_Sum refers to input summary method. The verification result and execution time for each method/epsilon/image will be recorded in a csv file. (You can use ```<nohup>``` command if the execution takes long time.)
 
 
 Publications
