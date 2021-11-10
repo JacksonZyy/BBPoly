@@ -254,18 +254,13 @@ Experimental Results
 We have implemented our proposed method in a prototype analyzer called BBPoly, which is built on top of DeepPoly. Then, we conducted extensive experiments to evaluate the performance of both [our tool](https://arxiv.org/abs/2108.11651) and [DeepPoly](https://www.sri.inf.ethz.ch/publications/singh2019domain), in terms of precision, memory usage and runtime. The evaluation machine is equipped
 with a 2600 MHz 24 core GenuineIntel CPU with 64 GB of RAM.
 
-![High Level](imgs/mnist_conv_res.png)
-
 In the following, we compare the precision and performance of DeepZ and DeepPoly on a subset of the neural networks listed above in multi-threaded mode. In can be seen that DeepPoly is overall more precise than DeepZ but it is slower than DeepZ on the convolutional networks. 
 
-![High Level](https://files.sri.inf.ethz.ch/eran/plots/mnist_6_500.png)
+![High Level](imgs/mnist_conv_res.png)
 
-![High Level](https://files.sri.inf.ethz.ch/eran/plots/mnist_convsmall.png)
+![High Level](imgs/mnist_ffcn_res.png)
 
-![High Level](https://files.sri.inf.ethz.ch/eran/plots/mnist_sigmoid_tanh.png)
-
-![High Level](https://files.sri.inf.ethz.ch/eran/plots/cifar10_convsmall.png)
-
+![High Level](imgs/cifar_nor_res.png)
 
 The table below compares the performance and precision of DeepZ and DeepPoly on our large networks trained with DiffAI. 
 
