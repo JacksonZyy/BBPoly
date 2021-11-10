@@ -254,182 +254,18 @@ Experimental Results
 We have implemented our proposed method in a prototype analyzer called BBPoly, which is built on top of DeepPoly. Then, we conducted extensive experiments to evaluate the performance of both [our tool](https://arxiv.org/abs/2108.11651) and [DeepPoly](https://www.sri.inf.ethz.ch/publications/singh2019domain), in terms of precision, memory usage and runtime. The evaluation machine is equipped
 with a 2600 MHz 24 core GenuineIntel CPU with 64 GB of RAM.
 
-In the following, we compare the precision and performance of DeepZ and DeepPoly on a subset of the neural networks listed above in multi-threaded mode. In can be seen that DeepPoly is overall more precise than DeepZ but it is slower than DeepZ on the convolutional networks. 
-
-![High Level](imgs/mnist_conv_res.png)
+In the following, we compare the precision of BBPoly and DeepPoly on fully-connected and convolutional neural networks, where DeepPoly can terminates within our timeout (3 hours). In can be seen that DeepPoly is overall more precise than BBPoly, but BBPoly runs faster (for execution time, please refer to [our technical report](https://arxiv.org/abs/2108.11651)) and achieves quite comparable precision for the majority of the networks. The results for MNIST networks are displayed below: 
 
 ![High Level](imgs/mnist_ffcn_res.png)
 
+![High Level](imgs/mnist_conv_res.png)
+
+ The results for CIFAR10 networks are shown as followed: 
+
 ![High Level](imgs/cifar_nor_res.png)
 
-The table below compares the performance and precision of DeepZ and DeepPoly on our large networks trained with DiffAI. 
+The table below compares the performance and precision of BBPoly and DeepPoly on our large CIFAR10 residual networks trained with DiffAI.  DeepPoly fails to verify any image within the timeout of 3 hours in our evaluation platform (indicated by ‘-’). The number of candidate images, verified images and the average execution time per image for our experiment are listed below, where column “BlkSum 4bound” refers to block-summarization method together with bounded back-substitution in four steps and “Input Sum” refers to our summary-over-input method. 
 
-
-<table aligh="center">
-  <tr>
-    <td>Dataset</td>
-    <td>Model</td>
-    <td>&epsilon;</td>
-    <td colspan="2">% Verified Robustness</td>
-    <td colspan="2">% Average Runtime (s)</td>
-  </tr>
-  <tr>
-   <td> </td>
-   <td> </td>
-   <td> </td>
-   <td> DeepZ </td>
-   <td> DeepPoly </td>
-   <td> DeepZ </td> 
-   <td> DeepPoly </td>
-  </tr>
-
-<tr>
-   <td> MNIST</td>
-   <td> ConvBig</td>
-   <td> 0.1</td>
-   <td> 97 </td>
-   <td> 97 </td>
-   <td> 5 </td> 
-   <td> 50 </td>
-</tr>
-
-
-<tr>
-   <td> </td>
-   <td> ConvBig</td>
-   <td> 0.2</td>
-   <td> 79 </td>
-   <td> 78 </td>
-   <td> 7 </td> 
-   <td> 61 </td>
-</tr>
-
-<tr>
-   <td> </td>
-   <td> ConvBig</td>
-   <td> 0.3</td>
-   <td> 37 </td>
-   <td> 43 </td>
-   <td> 17 </td> 
-   <td> 88 </td>
-</tr>
-
-<tr>
-   <td> </td>
-   <td> ConvSuper</td>
-   <td> 0.1</td>
-   <td> 97 </td>
-   <td> 97 </td>
-   <td> 133 </td> 
-   <td> 400 </td>
-</tr>
-
-<tr>
-   <td> </td>
-   <td> Skip</td>
-   <td> 0.1</td>
-   <td> 95 </td>
-   <td> N/A </td>
-   <td> 29 </td> 
-   <td> N/A </td>
-</tr>
-
-<tr>
-   <td> CIFAR10</td>
-   <td> ConvBig</td>
-   <td> 0.006</td>
-   <td> 50 </td>
-   <td> 52 </td>
-   <td> 39 </td> 
-   <td> 322 </td>
-</tr>
-
-
-<tr>
-   <td> </td>
-   <td> ConvBig</td>
-   <td> 0.008</td>
-   <td> 33 </td>
-   <td> 40 </td>
-   <td> 46 </td> 
-   <td> 331 </td>
-</tr>
-
-
-</table>
-
-
-The table below compares the timings of complete verification with ERAN for all ACASXu benchmarks. 
-
-
-<table aligh="center">
-  <tr>
-    <td>Property</td>
-    <td>Networks</td>
-    <td colspan="1">% Average Runtime (s)</td>
-  </tr>
-  
-  <tr>
-   <td> 1</td>
-   <td> all 45</td>
-   <td> 15.5 </td>
-  </tr>
-
-<tr>
-   <td> 2</td>
-   <td> all 45</td>
-   <td> 11.4 </td>
-  </tr>
-
-<tr>
-   <td> 3</td>
-   <td> all 45</td>
-   <td> 1.9 </td>
-  </tr>
-  
-<tr>
-   <td> 4</td>
-   <td> all 45</td>
-   <td> 1.1 </td>
-  </tr>
-
-<tr>
-   <td> 5</td>
-   <td> 1_1</td>
-   <td> 26 </td>
-  </tr>
-
-<tr>
-   <td> 6</td>
-   <td> 1_1</td>
-   <td> 10 </td>
-  </tr>
-  
-<tr>
-   <td> 7</td>
-   <td> 1_9</td>
-   <td> 83 </td>
-  </tr>
-
-<tr>
-   <td> 8</td>
-   <td> 2_9</td>
-   <td> 111 </td>
-  </tr>
-
-<tr>
-   <td> 9</td>
-   <td> 3_3</td>
-   <td> 9 </td>
-  </tr>
-  
-<tr>
-   <td> 10</td>
-   <td> 4_5</td>
-   <td> 2.1 </td>
-  </tr>
-
-</table>
 
 
 More experimental results can be found in [our technical report](https://arxiv.org/abs/2108.11651).
