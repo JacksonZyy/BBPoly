@@ -232,7 +232,7 @@ References
 Neural Networks and Datasets
 ---------------
 
-We collected a number of pretrained MNIST and CIAFR10 defended and undefended feedforward, convolutional and residual neural networks with ReLU activations, from [ERAN Repo](https://github.com/eth-sri/eran). The adversarial training to obtain the defended networks is performed using [DiffAI](https://github.com/eth-sri/diffai). 
+We collected a number of pretrained MNIST and CIAFR10 defended and undefended feedforward, convolutional and residual neural networks with ReLU activations, from [ERAN REPO](https://github.com/eth-sri/eran). The adversarial training to obtain the defended networks is performed using [DiffAI](https://github.com/eth-sri/diffai). 
 
 | Dataset  |   Model  |  Type   | #units | #layers| Activation | Training Defense| Download |
 | :-------- | :-------- | :-------- | :-------------| :-------------| :------------ | :------------- | :---------------:|
@@ -251,7 +251,8 @@ The first 100 images from the testset of both MNIST and CIFAR10 datasets are pro
 
 Experimental Results
 --------------
-We ran our experiments for the feedforward networks on a 3.3 GHz 10 core Intel i9-7900X Skylake CPU with a main memory of 64 GB whereas our experiments for the convolutional networks were run on a 2.6 GHz 14 core Intel Xeon CPU E5-2690 with 512 GB of main memory. We first compare the precision and performance of DeepZ and DeepPoly vs [Fast-Lin](https://github.com/huanzhang12/CertifiedReLURobustness) on the MNIST 6x100 network in single threaded mode. It can be seen that DeepZ has the same precision as Fast-Lin whereas DeepPoly is more precise while also being faster.
+We have implemented our proposed method in a prototype analyzer called BBPoly, which is built on top of DeepPoly. Then, we conducted extensive experiments to evaluate the performance of both [our tool](https://arxiv.org/abs/2108.11651) and [DeepPoly](https://www.sri.inf.ethz.ch/publications/singh2019domain), in terms of precision, memory usage and runtime. The evaluation machine is equipped
+with a 2600 MHz 24 core GenuineIntel CPU with 64 GB of RAM.
 
 ![High Level](https://files.sri.inf.ethz.ch/eran/plots/mnist_6_100.png)
 
