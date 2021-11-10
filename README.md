@@ -268,6 +268,8 @@ The table below compares the performance and precision of BBPoly and DeepPoly on
 
 ![High Level](imgs/res_tlb1.png)
 
+![High Level](imgs/res_tlb2.png)
+
 More experimental results can be found in [our technical report](https://arxiv.org/abs/2108.11651).
 
 Contributors
