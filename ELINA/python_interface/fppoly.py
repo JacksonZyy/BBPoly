@@ -617,6 +617,39 @@ def is_greater(man, element, y, x, use_area_heuristic,layer_by_layer, is_residua
         print(inst)
     return res
 
+def label_deviation_lb(man, element, y, x, use_area_heuristic,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+    """
+     To return the lower bound of auxilinary node y-x
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive : c_bool
+        Boolean flag.
+    y : ElinaDim
+        The dimension y in the constraint y-x>0.
+    x: ElinaDim
+	The dimension x in the constraint y-x>0.
+    use_area_heuristic: c_bool
+        whether to use area heuristic
+    Returns
+    -------
+    res = boolean
+
+    """
+    res= None
+    try:
+        label_deviation_lb_c = fppoly_api.label_deviation_lb
+        label_deviation_lb_c.restype = c_double
+        label_deviation_lb_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
+        res = label_deviation_lb_c(man,element,y, x,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+    except Exception as inst:
+        print('Problem with loading/calling "label_deviation_lb" from "libfppoly.so"')
+        print(inst)
+    return res
+
+
 def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
     """
     Convolutional Matrix multiplication in the first layer

@@ -490,6 +490,53 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 	}
 }
 
+double label_deviation_lb(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool var_cancel_heuristic){
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+	expr_t * sub = (expr_t *)malloc(sizeof(expr_t));
+	//sub->size = size;
+	sub->inf_cst = 0;
+	sub->sup_cst = 0;
+	sub->inf_coeff = (double*)malloc(2*sizeof(double));
+	sub->sup_coeff = (double*)malloc(2*sizeof(double));
+	sub->dim =(size_t *)malloc(2*sizeof(size_t));
+	sub->size = 2;
+	sub->type = SPARSE;
+	sub->inf_coeff[0] = -1;
+	sub->sup_coeff[0] = 1;
+	sub->dim[0] = y;
+	sub->inf_coeff[1] = 1;
+	sub->sup_coeff[1] = -1;
+	sub->dim[1] = x;
+	double lb = INFINITY;
+	int k;
+	expr_t * backsubstituted_lexpr = copy_expr(sub);
+	// printf("The auxilinary neuron is %zu - %zu\n", y, x);
+	if(layer_by_layer){
+		k = fp->numlayers - 1;
+		while (k >= -1)
+		{
+			double cur_lb = get_lb_using_prev_layer(man, fp, &backsubstituted_lexpr, k);
+			lb = fmin(lb, cur_lb);
+			if (k < 0 || lb < 0)
+				break;
+			k = fp->layers[k]->predecessors[0] - 1;
+		}
+	}
+	else{
+		lb = get_lb_using_previous_layers(man, fp, &sub, fp->numlayers, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
+	}
+	if(sub){
+		free_expr(sub);
+		sub = NULL;
+	}
+	if(backsubstituted_lexpr){
+		free_expr(backsubstituted_lexpr);
+		backsubstituted_lexpr = NULL;
+	}
+	return -lb;
+}
+
 long int max(long int a, long int b){
 	return a> b? a : b;
 }
