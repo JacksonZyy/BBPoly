@@ -288,72 +288,6 @@ def handle_fully_connected_layer_no_alloc(man, element,weights, bias,  size, num
 
     return
 
-def handle_concatenation_layer(man, element, predecessors, num_predecessors, C):
-    """
-        handle the first FFN ReLU layer
-
-        Parameters
-        ----------
-        man : ElinaManagerPtr
-        Pointer to the ElinaManager.
-        element : ElinaAbstract0Ptr
-        Pointer to the ElinaAbstract0.
-    predecessors: POINTER(c_size_t)
-        the layers before the current layer
-    num_predecessors: c_size_t
-        the number of predecessors of the current layer
-    C: POINTER(c_size_t)
-        the number of channels in each predecessor
-    Returns
-    -------
-    res : None
-
-    """
-
-    try:
-        handle_concatenation_layer_c = fppoly_api.handle_concatenation_layer
-        handle_concatenation_layer_c.restype = None
-        handle_concatenation_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), c_size_t, POINTER(c_size_t)]
-        handle_concatenation_layer_c(man, element, predecessors, num_predecessors, C)
-    except Exception as inst:
-        print('Problem with loading/calling "handle_concatenation_layer" from "libfppoly.so"')
-        print(inst)
-
-    return
-
-def handle_tiling_layer(man, element, predecessors, num_predecessors, repeat):
-    """
-        handle the first FFN ReLU layer
-
-        Parameters
-        ----------
-        man : ElinaManagerPtr
-        Pointer to the ElinaManager.
-        element : ElinaAbstract0Ptr
-        Pointer to the ElinaAbstract0.
-    predecessors: POINTER(c_size_t)
-        the layers before the current layer
-    num_predecessors: c_size_t
-        the number of predecessors of the current layer
-    repeat: c_size_t
-        the number of tiles
-    Returns
-    -------
-    res : None
-
-    """
-
-    try:
-        handle_tiling_layer_c = fppoly_api.handle_tiling_layer
-        handle_tiling_layer_c.restype = None
-        handle_tiling_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, POINTER(c_size_t), c_size_t, c_size_t]
-        handle_tiling_layer_c(man, element, predecessors, num_predecessors, repeat)
-    except Exception as inst:
-        print('Problem with loading/calling "handle_tiling_layer" from "libfppoly.so"')
-        print(inst)
-
-    return
-
 
 def handle_sub_layer(man, element, cst, is_minuend, size, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
     """
@@ -459,132 +393,6 @@ def handle_relu_layer(man, element, num_neurons, predecessors, num_predecessors,
         print('Problem with loading/calling "handle_relu_layer" from "libfppoly.so"')
         print(inst)
 
-def handle_sigmoid_layer(man, element, num_neurons, predecessors, num_predecessors):
-    """
-    handle Sigmoid layer
-    
-    Parameters
-    ----------
-    man : ElinaManagerPtr
-        Pointer to the ElinaManager.
-    element : ElinaAbstract0Ptr
-        Pointer to the abstract element
-    num_neurons: c_size_t
-        number of neurons
-    predecessors: POINTER(c_size_t)
-        the layers before the current layer
-    num_predecessors: c_size_t
-        the number of predecessors of the current layer
-    Returns
-    -------
-    None
-
-    """
-
-    try:
-        handle_sigmoid_layer_c = fppoly_api.handle_sigmoid_layer
-        handle_sigmoid_layer_c.restype = None
-        handle_sigmoid_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t]
-        handle_sigmoid_layer_c(man, element, num_neurons, predecessors, num_predecessors)
-    except Exception as inst:
-        print('Problem with loading/calling "handle_sigmoid_layer" from "libfppoly.so"')
-        print(inst)
-        
-def handle_tanh_layer(man, element, num_neurons, predecessors, num_predecessors):
-    """
-    handle Tanh layer
-    
-    Parameters
-    ----------
-    man : ElinaManagerPtr
-        Pointer to the ElinaManager.
-    element : ElinaAbstract0Ptr
-        Pointer to the abstract element
-    num_neurons: c_size_t
-        number of neurons
-    predecessors: POINTER(c_size_t)
-        the layers before the current layer
-    num_predecessors: c_size_t
-        the number of predecessors of the current layer
-    Returns
-    -------
-    None
-
-    """
-
-    try:
-        handle_tanh_layer_c = fppoly_api.handle_tanh_layer
-        handle_tanh_layer_c.restype = None
-        handle_tanh_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t]
-        handle_tanh_layer_c(man, element, num_neurons, predecessors, num_predecessors)
-    except Exception as inst:
-        print('Problem with loading/calling "handle_tanh_layer" from "libfppoly.so"')
-        print(inst)
-        
-        
-def handle_parabola_layer(man, element, num_neurons, predecessors, num_predecessors):
-    """
-    handle Parabola layer
-    
-    Parameters
-    ----------
-    man : ElinaManagerPtr
-        Pointer to the ElinaManager.
-    element : ElinaAbstract0Ptr
-        Pointer to the abstract element
-    num_neurons: c_size_t
-        number of neurons
-    predecessors: POINTER(c_size_t)
-        the layers before the current layer
-    num_predecessors: c_size_t
-        the number of predecessors of the current layer
-    Returns
-    -------
-    None
-
-    """
-
-    try:
-        handle_parabola_layer_c = fppoly_api.handle_parabola_layer
-        handle_parabola_layer_c.restype = None
-        handle_parabola_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t]
-        handle_parabola_layer_c(man, element, num_neurons, predecessors, num_predecessors)
-    except Exception as inst:
-        print('Problem with loading/calling "handle_parabola_layer" from "libfppoly.so"')
-        print(inst)
-        
-        
-def handle_log_layer(man, element, num_neurons, predecessors, num_predecessors):
-    """
-    handle Log layer
-    
-    Parameters
-    ----------
-    man : ElinaManagerPtr
-        Pointer to the ElinaManager.
-    element : ElinaAbstract0Ptr
-        Pointer to the abstract element
-    num_neurons: c_size_t
-        number of neurons
-    predecessors: POINTER(c_size_t)
-        the layers before the current layer
-    num_predecessors: c_size_t
-        the number of predecessors of the current layer
-    Returns
-    -------
-    None
-
-    """
-
-    try:
-        handle_log_layer_c = fppoly_api.handle_log_layer
-        handle_log_layer_c.restype = None
-        handle_log_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t]
-        handle_log_layer_c(man, element, num_neurons, predecessors, num_predecessors)
-    except Exception as inst:
-        print('Problem with loading/calling "handle_log_layer" from "libfppoly.so"')
-        print(inst)
-
 def is_greater(man, element, y, x, use_area_heuristic,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
     """
      Check if y is strictly greater than x in the abstract element 
@@ -646,6 +454,37 @@ def label_deviation_lb(man, element, y, x, use_area_heuristic,layer_by_layer, is
         res = label_deviation_lb_c(man,element,y, x,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
     except Exception as inst:
         print('Problem with loading/calling "label_deviation_lb" from "libfppoly.so"')
+        print(inst)
+    return res
+
+def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list, spurious_count):
+    """
+     To check is this adversarial label poten_cex is spurious or not
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive : c_bool
+        Boolean flag.
+    y : ElinaDim
+        The dimension y in the constraint y-x>0.
+    x: ElinaDim
+	The dimension x in the constraint y-x>0.
+    Returns
+    -------
+    res = boolean
+
+    """
+    res= None
+    try:
+        is_spurious_c = fppoly_api.is_spurious
+        is_spurious_c.restype = c_bool
+        spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
+        is_spurious_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, c_bool, c_bool, c_int, c_bool, ndpointer(c_uint), c_int]
+        res = is_spurious_c(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list_np, spurious_count)
+    except Exception as inst:
+        print('Problem with loading/calling "is_spurious" from "libfppoly.so"')
         print(inst)
     return res
 

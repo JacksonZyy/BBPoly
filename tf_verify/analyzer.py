@@ -121,6 +121,7 @@ class Analyzer:
             self.man = fppoly_manager_alloc()
             self.is_greater = is_greater
             self.label_deviation_lb = label_deviation_lb
+            self.is_spurious = is_spurious
         self.domain = domain
         self.nn = nn
         self.timeout_lp = timeout_lp
@@ -232,7 +233,8 @@ class Analyzer:
         output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
         dominant_class = -1
         label_failed = []
-        potential_adv_labels = []
+        potential_adv_labels = {} 
+        # potential_adv_labels is the dictionary where key is the adv label i and value is the deviation ground_truth_label-i
         x = None
         
         adv_labels = []
@@ -245,27 +247,33 @@ class Analyzer:
         potential_adv_count = 0
         for j in adv_labels:
             # if not self.is_greater(self.man, element, ground_truth_label, j, self.use_default_heuristic, self.layer_by_layer, self.is_residual, self.is_blk_segmentation, self.blk_size, self.is_early_terminate, self.early_termi_thre, self.is_sum_def_over_input, self.var_cancel_heuristic):
-            if self.label_deviation_lb(self.man, element, ground_truth_label, j, self.use_default_heuristic, self.layer_by_layer, self.is_residual, self.is_blk_segmentation, self.blk_size, self.is_early_terminate, self.early_termi_thre, self.is_sum_def_over_input, self.var_cancel_heuristic) < 0:
+            lb = self.label_deviation_lb(self.man, element, ground_truth_label, j, self.use_default_heuristic, self.layer_by_layer, self.is_residual, self.is_blk_segmentation, self.blk_size, self.is_early_terminate, self.early_termi_thre, self.is_sum_def_over_input, self.var_cancel_heuristic)
+            if lb < 0:
                 # testing if label is always greater than j
-                # print("Here!")
                 flag = False
-                potential_adv_labels.append(j)
+                potential_adv_labels[j] = lb
                 potential_adv_count = potential_adv_count + 1
                 if config.complete == False:
                     break
         if flag:
             # if we successfully mark the groud truth label as dominant label
             dominant_class = ground_truth_label
-        # else:
-        #     # do the spurious region pruning
-        #     for poten_cex in potential_adv_labels:
-        #         if self.is_spurious(self.man, element, ground_truth_label, j, self.use_default_heuristic, self.layer_by_layer, self.is_residual, self.is_blk_segmentation, self.blk_size, self.is_early_terminate, self.early_termi_thre, self.is_sum_def_over_input, self.var_cancel_heuristic):
-        #             potential_adv_count = potential_adv_count - 1
-        #         else: 
-        #             break
-        #     if(potential_adv_count == 0):
-        #         print("Successfully refine the result")
-        #         dominant_class = ground_truth_label
+        else:
+            # do the spurious region pruning
+            sorted_d = dict(sorted(potential_adv_labels.items(), key=lambda x: x[1],reverse=True))
+            spurious_list = []
+            spurious_count = 0
+            for poten_cex in sorted_d:
+                if self.is_spurious(self.man, element, ground_truth_label, poten_cex, self.layer_by_layer, self.is_blk_segmentation, self.blk_size, self.is_sum_def_over_input, spurious_list, spurious_count):
+                    potential_adv_count = potential_adv_count - 1
+                    spurious_list.append(poten_cex)
+                    spurious_count = spurious_count + 1
+                else: 
+                    print("enter here")
+                    break
+            if(potential_adv_count == 0):
+                print("Successfully refine the result")
+                dominant_class = ground_truth_label
             
         #print("enter abstract_free() in python")
         elina_abstract0_free(self.man, element)
