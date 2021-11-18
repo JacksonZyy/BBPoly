@@ -123,7 +123,7 @@ class ERAN:
         else:
             return dominant_class, nn, nlb, nub, failed_labels, x
 
-    def analyze_with_ground_truth_label(self, specLB, specUB, domain, timeout_lp, timeout_milp, use_default_heuristic, layer_by_layer = False, is_residual = False, is_blk_segmentation=False, blk_size=0, is_early_terminate = False, early_termi_thre = 0, is_sum_def_over_input = True, var_cancel_heuristic = False,output_constraints=None, lexpr_weights= None, lexpr_cst=None, lexpr_dim=None, uexpr_weights=None, uexpr_cst=None, uexpr_dim=None, expr_size=0, testing = False,label=-1, prop = -1):
+    def analyze_with_ground_truth_label(self, specLB, specUB, domain, timeout_lp, timeout_milp, use_default_heuristic, layer_by_layer = False, is_residual = False, is_blk_segmentation=False, blk_size=0, is_early_terminate = False, early_termi_thre = 0, is_sum_def_over_input = True, var_cancel_heuristic = False, REFINE_MAX_ITER = 5, output_constraints=None, lexpr_weights= None, lexpr_cst=None, lexpr_dim=None, uexpr_weights=None, uexpr_cst=None, uexpr_dim=None, expr_size=0, testing = False,label=-1, prop = -1):
         """
         This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
         
@@ -149,7 +149,7 @@ class ERAN:
         nn.specLB = specLB
         nn.specUB = specUB
         execute_list, output_info = self.optimizer.get_deeppoly(nn, specLB, specUB, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size)
-        analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic, REFINE_MAX_ITER)
         dominant_class, nlb, nub, failed_labels, x = analyzer.analyze_groud_truth_label(label)
         if testing:
             return dominant_class, nn, nlb, nub, output_info

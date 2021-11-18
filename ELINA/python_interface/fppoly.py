@@ -457,7 +457,7 @@ def label_deviation_lb(man, element, y, x, use_area_heuristic,layer_by_layer, is
         print(inst)
     return res
 
-def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list, spurious_count):
+def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list, spurious_count, MAX_ITER):
     """
      To check is this adversarial label poten_cex is spurious or not
     
@@ -481,8 +481,8 @@ def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_
         is_spurious_c = fppoly_api.is_spurious
         is_spurious_c.restype = c_bool
         spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
-        is_spurious_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, c_bool, c_bool, c_int, c_bool, ndpointer(c_uint), c_int]
-        res = is_spurious_c(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list_np, spurious_count)
+        is_spurious_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, c_bool, c_bool, c_int, c_bool, ndpointer(c_uint), c_int, c_int]
+        res = is_spurious_c(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list_np, spurious_count, MAX_ITER)
     except Exception as inst:
         print('Problem with loading/calling "is_spurious" from "libfppoly.so"')
         print(inst)

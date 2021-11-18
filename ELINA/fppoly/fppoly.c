@@ -490,7 +490,8 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 	}
 }
 
-bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, bool layer_by_layer, bool is_blk_segmentation, int blk_size, bool is_sum_def_over_input, int * spurious_list, int spurious_count){
+bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, bool layer_by_layer, bool is_blk_segmentation, int blk_size, bool is_sum_def_over_input, int * spurious_list, int spurious_count, int MAX_ITER){
+	// firstly consider the default case, where like in SMU paper, to encode all the constraints within the network
 	return false;
 }
 

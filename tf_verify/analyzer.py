@@ -96,7 +96,7 @@ class layers:
 
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False, layer_by_layer = False, is_residual = False, is_blk_segmentation=False, blk_size=0, is_early_terminate = False, early_termi_thre = 0, is_sum_def_over_input = True, var_cancel_heuristic = False):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False, layer_by_layer = False, is_residual = False, is_blk_segmentation=False, blk_size=0, is_early_terminate = False, early_termi_thre = 0, is_sum_def_over_input = True, var_cancel_heuristic = False, REFINE_MAX_ITER = 5):
         """
         Arguments
         ---------
@@ -116,6 +116,7 @@ class Analyzer:
         self.early_termi_thre = early_termi_thre
         self.is_sum_def_over_input = is_sum_def_over_input
         self.var_cancel_heuristic = var_cancel_heuristic
+        self.MAX_ITER = REFINE_MAX_ITER
         self.refine = False
         if domain == 'deeppoly' or domain == 'refinepoly':
             self.man = fppoly_manager_alloc()
@@ -264,12 +265,12 @@ class Analyzer:
             spurious_list = []
             spurious_count = 0
             for poten_cex in sorted_d:
-                if self.is_spurious(self.man, element, ground_truth_label, poten_cex, self.layer_by_layer, self.is_blk_segmentation, self.blk_size, self.is_sum_def_over_input, spurious_list, spurious_count):
+                if self.is_spurious(self.man, element, ground_truth_label, poten_cex, self.layer_by_layer, self.is_blk_segmentation, self.blk_size, self.is_sum_def_over_input, spurious_list, spurious_count, self.MAX_ITER):
                     potential_adv_count = potential_adv_count - 1
                     spurious_list.append(poten_cex)
                     spurious_count = spurious_count + 1
                 else: 
-                    print("enter here")
+                    # print("enter here")
                     break
             if(potential_adv_count == 0):
                 print("Successfully refine the result")
