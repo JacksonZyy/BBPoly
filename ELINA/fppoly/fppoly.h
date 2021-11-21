@@ -39,6 +39,9 @@ extern "C" {
 #include <fenv.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 //#include <sys/sysinfo.h>
 #include "elina_generic.h"
 #include "elina_box_meetjoin.h"
@@ -125,8 +128,11 @@ typedef struct expr_list_t{
 typedef struct fppoly_t{
 	layer_t ** layers;
 	size_t numlayers;
-	double *input_inf;
+	double * input_inf;
 	double * input_sup;
+	// These domains never changes over the refinement procedure
+	double * original_input_inf;
+	double * original_input_sup;
 	expr_t ** input_lexpr;
 	expr_t ** input_uexpr;
 	size_t size;
