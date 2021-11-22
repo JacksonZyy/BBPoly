@@ -1,7 +1,7 @@
-BBPoly instantiated on ERAN
+BBPoly instantiated from ERAN
 ========
 
-BBPoly is a scalabel and module robustness verification tool which is instantiated on DeepPoly domain in ETH Robustness Analyzer for Neural Networks ([ERAN](https://github.com/eth-sri/eran)). BBPoly provides incomplete verification of MNIST, CIFAR10 based networks can be tuned to achieve trade-off between precision and scalability (see recommended configuration settings at the bottom). 
+BBPoly is a scalable and modular robustness verification tool which is instantiated on DeepPoly domain in ETH Robustness Analyzer for Neural Networks ([ERAN](https://github.com/eth-sri/eran)). BBPoly provides incomplete verification of MNIST, CIFAR10 based networks, and can be tuned to achieve trade-off between precision and scalability (see recommended configuration settings at the bottom). 
 
 BBPoly currently supports networks with ReLU activation and is sound under floating point arithmetic. It employs the abstract domain designed in DeepPoly and leverages network block summary to balance scalability and precision. The description of our BBPoly system can be found in [APLAS'21](https://link.springer.com/chapter/10.1007/978-3-030-89051-3_1) or [arXiv preprint](https://arxiv.org/abs/2108.11651)
 
