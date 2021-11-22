@@ -22,6 +22,7 @@
 #include <time.h>
 #include <math.h>
 #include "gurobi_c.h"
+#include "relu_approx.h"
 
 
 fppoly_t* fppoly_of_abstract0(elina_abstract0_t* a)
@@ -502,6 +503,50 @@ void handle_gurobi_error(int error, GRBenv *env) {
     }
 }
 
+void* run_deeppoly(elina_manager_t* man, elina_abstract0_t* element){
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	size_t numlayers = fp->numlayers;
+	size_t i, j;
+	for (j=0; j < numlayers; j++){
+		if(!fp->layers[j]->is_activation){
+			// deeppoly run the affine layer
+			neuron_t **neurons = fp->layers[j]->neurons;
+			for(i=0; i < fp->layers[j]->dims; i++){
+				// free before new assignment
+				if(neurons[i]->backsubstituted_lexpr){
+					free_expr(neurons[i]->backsubstituted_lexpr);
+				}
+				neurons[i]->backsubstituted_lexpr = copy_expr(neurons[i]->lexpr);
+				if(neurons[i]->backsubstituted_uexpr){
+					free_expr(neurons[i]->backsubstituted_uexpr);
+				}
+				neurons[i]->backsubstituted_uexpr = copy_expr(neurons[i]->uexpr);
+			}	
+			update_state_layer_by_layer_parallel(man,fp,numlayers, true, false, false, 0, false, 0, false, false);
+		}
+		else{
+			// deeppoly run the relu layer
+			int k = fp->layers[j]->predecessors[0]-1;
+			layer_t *predecessor_layer = fp->layers[k];
+			neuron_t **in_neurons = fp->layers[k]->neurons;
+			neuron_t **out_neurons = fp->layers[j]->neurons;
+			for(i=0; i < fp->layers[j]->dims; i++){
+				out_neurons[i]->lb = -fmax(0.0, -in_neurons[i]->lb);
+				out_neurons[i]->ub = fmax(0,in_neurons[i]->ub);
+				if(out_neurons[i]->lexpr){
+					free_expr(out_neurons[i]->lexpr);
+				}
+				out_neurons[i]->lexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, true, true, false);
+				if(out_neurons[i]->uexpr){
+					free_expr(out_neurons[i]->uexpr);
+				}
+				out_neurons[i]->uexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, true, false, false);
+			}
+		}
+	}
+	return NULL;
+}
+
 bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, bool layer_by_layer, bool is_blk_segmentation, int blk_size, bool is_sum_def_over_input, int * spurious_list, int spurious_count, int MAX_ITER){
 	// firstly consider the default case, where like in SMU paper, to encode all the constraints within the network
 	int count, k;
@@ -517,8 +562,7 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	// Refine for MAX_ITER times
 	for(count = 0; count < MAX_ITER; count++){
 		// run deeppoly() firstly to get all the constraints (for the relu ones in particular, since affine constraint doesn't change)
-		
-
+		run_deeppoly(man, element);
 		/* Create environment */
   		GRBenv *env   = NULL;
   		GRBmodel *model = NULL;
@@ -757,7 +801,7 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 				}
 			}
 		}
-		printf('Refreshed ReLU nodes: %d\n',relu_refine_count);
+		printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
 		/* Free model */
   		GRBfreemodel(model);
   		/* Free environment */
