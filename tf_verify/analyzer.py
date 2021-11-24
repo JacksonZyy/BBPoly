@@ -96,7 +96,7 @@ class layers:
 
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False, layer_by_layer = False, is_residual = False, is_blk_segmentation=False, blk_size=0, is_early_terminate = False, early_termi_thre = 0, is_sum_def_over_input = True, var_cancel_heuristic = False, REFINE_MAX_ITER = 5):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False, layer_by_layer = False, is_residual = False, is_blk_segmentation=False, blk_size=0, is_early_terminate = False, early_termi_thre = 0, is_sum_def_over_input = True, var_cancel_heuristic = False, is_refinement = False, REFINE_MAX_ITER = 5):
         """
         Arguments
         ---------
@@ -117,6 +117,7 @@ class Analyzer:
         self.is_sum_def_over_input = is_sum_def_over_input
         self.var_cancel_heuristic = var_cancel_heuristic
         self.MAX_ITER = REFINE_MAX_ITER
+        self.is_refinement = is_refinement
         self.refine = False
         if domain == 'deeppoly' or domain == 'refinepoly':
             self.man = fppoly_manager_alloc()
@@ -259,8 +260,8 @@ class Analyzer:
         if flag:
             # if we successfully mark the groud truth label as dominant label
             dominant_class = ground_truth_label
-        else:
-            # do the spurious region pruning
+        elif self.is_refinement:
+            # do the spurious region pruning refinement
             sorted_d = dict(sorted(potential_adv_labels.items(), key=lambda x: x[1],reverse=True))
             spurious_list = []
             spurious_count = 0

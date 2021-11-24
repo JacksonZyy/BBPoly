@@ -547,6 +547,20 @@ void* run_deeppoly(elina_manager_t* man, elina_abstract0_t* element){
 	return NULL;
 }
 
+void* clear_neurons_status(elina_manager_t* man, elina_abstract0_t* element){
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	size_t i, j;
+	for(i = 0; i < fp->numlayers; i++){
+		layer_t *layer = fp->layers[i];
+		neuron_t ** neurons = layer->neurons;
+		for(j = 0; j < layer->dims; j++){
+			neurons[j]->lb = INFINITY;
+			neurons[j]->ub = INFINITY;
+		}
+	}
+	return NULL;
+}
+
 bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, bool layer_by_layer, bool is_blk_segmentation, int blk_size, bool is_sum_def_over_input, int * spurious_list, int spurious_count, int MAX_ITER){
 	// firstly consider the default case, where like in SMU paper, to encode all the constraints within the network
 	int count, k;
@@ -556,9 +570,12 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	double ulp = ldexpl(1.0,-52);
 	int optimstatus;
 	for(i=0; i < fp->num_pixels; i++){
+		// set the input neurons back to the original input space
 		fp->input_inf[i] = fp->original_input_inf[i];
 		fp->input_sup[i] = fp->original_input_sup[i];
 	}
+	// For new CEX pruning, clear the previous analysis bounds
+	clear_neurons_status(man, element);
 	// Refine for MAX_ITER times
 	for(count = 0; count < MAX_ITER; count++){
 		// run deeppoly() firstly to get all the constraints (for the relu ones in particular, since affine constraint doesn't change)
@@ -613,7 +630,6 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 					if(relu_node->ub == 0.0){
 						// stable unactivated relu nodes
 						expr_t * relu_expr = relu_node->lexpr;
-						size_t num_pre_neurons = relu_expr->size;
 						assert(relu_expr->type==SPARSE);
 						error = GRBaddvar(model, 0, NULL, NULL, 0.0, -relu_node->lb, relu_node->ub, GRB_CONTINUOUS, NULL);
 						handle_gurobi_error(error, env);
