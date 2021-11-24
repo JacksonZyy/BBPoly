@@ -175,7 +175,7 @@ elina_abstract0_t* fppoly_from_network_input_poly(elina_manager_t *man, size_t i
 	res->original_input_inf = NULL;
 	res->original_input_sup = NULL;
 	size_t i;
-        double * tmp_weights = (double*)malloc(expr_size*sizeof(double));
+	double * tmp_weights = (double*)malloc(expr_size*sizeof(double));
 	size_t * tmp_dim = (size_t*)malloc(expr_size*sizeof(size_t));
 	
 	for(i = 0; i < num_pixels; i++){
@@ -231,6 +231,8 @@ void handle_fully_connected_layer_with_backsubstitute(elina_manager_t* man, elin
     if(alloc){
         fppoly_add_new_layer(fp,num_out_neurons, predecessors, num_predecessors, false);
     }
+	// printf("layer with %zu neurons\n",num_out_neurons);
+	// printf("predecessor is %zu\n", predecessors[0]);
     neuron_t **out_neurons = fp->layers[numlayers]->neurons;
     size_t i;
     for(i=0; i < num_out_neurons; i++){
@@ -260,6 +262,7 @@ void handle_fully_connected_layer_with_backsubstitute(elina_manager_t* man, elin
 		update_state_layer_by_layer_parallel(man,fp,numlayers,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
 	}
 	else{
+		printf("enter layers analysis\n");
 		update_state_using_previous_layers_parallel(man,fp,numlayers,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
 	}
     return;
@@ -517,12 +520,16 @@ void* run_deeppoly(elina_manager_t* man, elina_abstract0_t* element){
 					free_expr(neurons[i]->backsubstituted_lexpr);
 				}
 				neurons[i]->backsubstituted_lexpr = copy_expr(neurons[i]->lexpr);
+				expr_print(neurons[i]->backsubstituted_lexpr);
 				if(neurons[i]->backsubstituted_uexpr){
 					free_expr(neurons[i]->backsubstituted_uexpr);
 				}
 				neurons[i]->backsubstituted_uexpr = copy_expr(neurons[i]->uexpr);
+				expr_print(neurons[i]->backsubstituted_uexpr);
 			}	
-			update_state_layer_by_layer_parallel(man,fp,numlayers, true, false, false, 0, false, 0, false, false);
+			// printf("before update_state_layer_by_layer_parallel\n");
+			update_state_layer_by_layer_parallel(man,fp, j, true, false, false, 0, false, 0, false, false);
+			// printf("after update_state_layer_by_layer_parallel\n");
 		}
 		else{
 			// deeppoly run the relu layer
@@ -576,10 +583,12 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	}
 	// For new CEX pruning, clear the previous analysis bounds
 	clear_neurons_status(man, element);
+	printf("clear_neurons_status end\n");
 	// Refine for MAX_ITER times
 	for(count = 0; count < MAX_ITER; count++){
 		// run deeppoly() firstly to get all the constraints (for the relu ones in particular, since affine constraint doesn't change)
 		run_deeppoly(man, element);
+		printf("run_deeppoly end\n");
 		/* Create environment */
   		GRBenv *env   = NULL;
   		GRBmodel *model = NULL;

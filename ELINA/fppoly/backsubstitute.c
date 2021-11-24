@@ -209,8 +209,11 @@ void * update_state_using_previous_layers(void *args){
 		bool already_computed= false;
 		expr_t *lexpr = copy_expr(out_neurons[i]->lexpr);
 		expr_t *uexpr = copy_expr(out_neurons[i]->uexpr);
+		// expr_print(lexpr);
+		// printf("layerno is %zu\n",layerno);
 		out_neurons[i]->lb = get_lb_using_previous_layers(man, fp, &lexpr, layerno, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
 		out_neurons[i]->ub = get_ub_using_previous_layers(man, fp, &uexpr, layerno, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
+		// printf("lb, ub are %.2f, %.2f for neuron %zu\n", out_neurons[i]->lb,out_neurons[i]->ub, i);
 		if(!layer_by_layer && is_blk_segmentation && fp->layers[layerno]->is_end_layer_of_blk){
 			out_neurons[i]->summary_lexpr = lexpr;
 			out_neurons[i]->summary_uexpr = uexpr;

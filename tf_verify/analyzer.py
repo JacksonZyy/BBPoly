@@ -149,10 +149,11 @@ class Analyzer:
         testing_nlb = []
         testing_nub = []
         # print("The len of deeppolyNodes is ", len(self.ir_list))
+        # print(self.ir_list)
         for i in range(1, len(self.ir_list)):
             #print(self.is_early_terminate)
             element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, 'refine' in self.domain, self.timeout_lp, self.timeout_milp, self.use_default_heuristic, self.testing, self.layer_by_layer, self.is_residual, self.is_blk_segmentation, self.blk_size, self.is_early_terminate, self.early_termi_thre, self.is_sum_def_over_input, self.var_cancel_heuristic)
-            #print("Transformer done for ",i)
+            # print("Transformer done for ",i)
             if self.testing and isinstance(element_test_bounds, tuple):
                 element, test_lb, test_ub = element_test_bounds
                 testing_nlb.append(test_lb)
@@ -229,7 +230,9 @@ class Analyzer:
         assert ground_truth_label!=-1, "The ground truth label cannot be -1!!!!!!!!!!!!!"
         assert self.output_constraints is None, "The output constraints are supposed to be None"
         assert self.prop == -1, "The prop are supposed to be deactivated"
+        print("enter get_abstract0")
         element, nlb, nub = self.get_abstract0()
+        print("leave get_abstract0")
         #print("leave get_abstract0()")
         output_size = 0
         output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
@@ -240,8 +243,10 @@ class Analyzer:
         x = None
         
         adv_labels = []
+        # print("output_size ",output_size)
         for i in range(output_size):
             if ground_truth_label!=i:
+                # print("a", i)
                 adv_labels.append(i)
 
         # print("adv_labels",adv_labels)   
@@ -265,6 +270,7 @@ class Analyzer:
             sorted_d = dict(sorted(potential_adv_labels.items(), key=lambda x: x[1],reverse=True))
             spurious_list = []
             spurious_count = 0
+            print(sorted_d)
             for poten_cex in sorted_d:
                 if self.is_spurious(self.man, element, ground_truth_label, poten_cex, self.layer_by_layer, self.is_blk_segmentation, self.blk_size, self.is_sum_def_over_input, spurious_list, spurious_count, self.MAX_ITER):
                     potential_adv_count = potential_adv_count - 1
