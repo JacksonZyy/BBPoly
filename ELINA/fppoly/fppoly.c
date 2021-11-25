@@ -529,6 +529,7 @@ void* run_deeppoly(elina_manager_t* man, elina_abstract0_t* element){
 			}	
 			// printf("before update_state_layer_by_layer_parallel\n");
 			update_state_layer_by_layer_parallel(man,fp, j, true, false, false, 0, false, 0, false, false);
+			printf("affine 1 's interval is [%.3f, %.3f], affine 2 's interval is [%.3f, %.3f] ", -neurons[0]->lb, neurons[0]->ub, -neurons[1]->lb, neurons[1]->ub);
 			// printf("after update_state_layer_by_layer_parallel\n");
 		}
 		else{
@@ -548,6 +549,8 @@ void* run_deeppoly(elina_manager_t* man, elina_abstract0_t* element){
 					free_expr(out_neurons[i]->uexpr);
 				}
 				out_neurons[i]->uexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, true, false, false);
+				printf("relu %zu 's upper expression is ", i);
+				expr_print(out_neurons[i]->uexpr);
 			}
 		}
 	}
@@ -588,7 +591,7 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	for(count = 0; count < MAX_ITER; count++){
 		// run deeppoly() firstly to get all the constraints (for the relu ones in particular, since affine constraint doesn't change)
 		run_deeppoly(man, element);
-		printf("run_deeppoly end\n");
+		printf("Refinement iteration %d\n", count);
 		/* Create environment */
   		GRBenv *env   = NULL;
   		GRBmodel *model = NULL;

@@ -379,6 +379,7 @@ void * update_state_layer_by_layer_lb(void *args)
 		bool already_computed = false;
 		//evaluate constraint defined over k, and further back-sub to k-1
 		out_neurons[i]->lb = fmin(out_neurons[i]->lb, get_lb_using_prev_layer(man, fp, &out_neurons[i]->backsubstituted_lexpr, k));
+		// printf("lower bound is %.6f\n", out_neurons[i]->lb);
 	}
 	return NULL;
 }
@@ -401,6 +402,7 @@ void *update_state_layer_by_layer_ub(void *args)
 		bool already_computed = false;
 		//evaluate constraint defined over k, and further back-sub to k-1
 		out_neurons[i]->ub = fmin(out_neurons[i]->ub, get_ub_using_prev_layer(man, fp, &out_neurons[i]->backsubstituted_uexpr, k));
+		// printf("upper bound is %.6f\n", out_neurons[i]->ub);
 	}
 	return NULL;
 }
