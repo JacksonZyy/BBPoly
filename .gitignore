@@ -18,3 +18,4 @@ install_geometric.sh
 overview.png
 aux_funcs/
 data/acasxu/
+tf_verify/LP_solver.log
