@@ -210,7 +210,8 @@ parser.add_argument('--blk_size', type=int, default=0,  help='How many affine la
 parser.add_argument('--is_blk_segmentation', type=str2bool, default=False,  help='flag to allow modular analysis in blocks')
 parser.add_argument('--is_early_terminate', type=str2bool, default=False,  help='flag to allow early termination or not')
 parser.add_argument('--early_termi_thre', type=int, default=0,  help='threshold for early termination')
-parser.add_argument('--refine_max_iter', type=int, default=0,  help='maximum number of iteration for abstract refinement')
+parser.add_argument('--is_refinement', type=str2bool, default=False,  help='flag to allow abstract refinement or not')
+parser.add_argument('--refine_max_iter', type=int, default=5,  help='maximum number of iteration for abstract refinement')
 parser.add_argument('--is_sum_def_over_input', type=str2bool, default=False,  help='if the summary is input summary or not (if not, it will be block summary')
 parser.add_argument('--stage_layer_num', type=int, default=None,  help='The number of how many layers in one block during segmentation, the default is None meaning that there is no staging included')
 parser.add_argument('--stage_block_num', type=int, default=None,  help='The number of how many block we will have after segmentation, the default is None')
@@ -314,6 +315,7 @@ candi_count = 0
 overall_time = 0.0
 
 for i, test in enumerate(tests):
+    print("analysis for image ", i)
     image= np.float64(test[1:len(test)])/np.float64(255)
     actual_label= int(test[0])
     specLB = np.copy(image)
@@ -335,13 +337,17 @@ for i, test in enumerate(tests):
 
         # execution with corresponding parameters
         start = time.time() 
-        eran_result = eran.analyze_with_ground_truth_label(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, REFINE_MAX_ITER=config.refine_max_iter, label=actual_label)
+        print(config.refine_max_iter)
+        eran_result = eran.analyze_with_ground_truth_label(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, is_refinement=config.is_refinement, REFINE_MAX_ITER=config.refine_max_iter, label=actual_label)
         # eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, label=actual_label)
         end = time.time()
         overall_time = overall_time + end - start
         dominant_class = eran_result[0]
         if(dominant_class == actual_label):
             verified_images = verified_images + 1
+            print("image ", i, " success!")
+        else:
+            print("image ", i, " fail!")
 
                 
 print('analysis precision ',verified_images,'/ ', candi_count)

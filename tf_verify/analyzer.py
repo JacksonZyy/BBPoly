@@ -269,14 +269,11 @@ class Analyzer:
             spurious_count = 0
             print(sorted_d)
             for poten_cex in sorted_d:
-                # print(poten_cex, "   adsfasfasdgasdjfoasjdfoasnasvaoi")
                 if self.is_spurious(self.man, element, ground_truth_label, poten_cex, self.layer_by_layer, self.is_blk_segmentation, self.blk_size, self.is_sum_def_over_input, spurious_list, spurious_count, self.MAX_ITER):
                     potential_adv_count = potential_adv_count - 1
                     spurious_list.append(poten_cex)
                     spurious_count = spurious_count + 1
-                else: 
-                    # print("enter here")
-                    break
+
             if(potential_adv_count == 0):
                 print("Successfully refine the result")
                 # print(spurious_list)

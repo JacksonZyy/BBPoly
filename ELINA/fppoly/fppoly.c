@@ -262,7 +262,7 @@ void handle_fully_connected_layer_with_backsubstitute(elina_manager_t* man, elin
 		update_state_layer_by_layer_parallel(man,fp,numlayers,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
 	}
 	else{
-		printf("enter layers analysis\n");
+		// printf("enter layers analysis\n");
 		update_state_using_previous_layers_parallel(man,fp,numlayers,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
 	}
     return;
@@ -584,6 +584,7 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 		fp->input_inf[i] = fp->original_input_inf[i];
 		fp->input_sup[i] = fp->original_input_sup[i];
 	}
+	// printf("before clear neurons\n");
 	// For new CEX pruning, clear the previous analysis bounds
 	clear_neurons_status(man, element);
 	// printf("clear_neurons_status end\n");
