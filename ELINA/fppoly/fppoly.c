@@ -593,7 +593,7 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 	}
 	clear_neurons_status(man, element);
 	clear_block_summary(man, element);
-
+	run_deeppoly(man, element);
 	k = numlayers - 1;
 	while(k>=0){
 		if(k == numlayers - 1){
@@ -601,7 +601,8 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 			int start_layer_index = fp->layers[numlayers - 1]->start_idx_in_same_blk;
 			for(count = 0; count < MAX_ITER; count++){
 				// refinement within this block for MAX_ITER times
-				run_deeppoly_in_block(man, element, start_layer_index, numlayers - 1);
+				if(count!=0)
+					run_deeppoly_in_block(man, element, start_layer_index, numlayers - 1);
 				// only run deeppoly within this block
 				GRBenv *env   = NULL;
 				GRBmodel *model = NULL;
@@ -857,9 +858,184 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 			// handle refinement through other blocks, where the encoding comes from block summaries
 			int start_layer_index = fp->layers[k]->start_idx_in_same_blk;
 			int ind_next_blk_connection = k + 1;
-			// add vars of: start layer, end layer, the start layer of next block it connects to 
+			for(count = 0; count < MAX_ITER; count++){
+				if(count!=0)
+					run_deeppoly_in_block(man, element, start_layer_index, numlayers - 1);
+				GRBenv *env   = NULL;
+				GRBmodel *model = NULL;
+				int error = 0;	
+				error = GRBemptyenv(&env);
+				handle_gurobi_error(error, env);
+				error = GRBsetstrparam(env, "LogFile", NULL);
+				handle_gurobi_error(error, env);
+				error = GRBstartenv(env);
+				handle_gurobi_error(error, env);
+				error = GRBnewmodel(env, &model, "refinement_solver", 0, NULL, NULL, NULL, NULL, NULL);
+				handle_gurobi_error(error, env);
+				// add the vars of start layer neurons
+				int end_var_start_ind;
+				if(start_layer_index >=0){
+					layer_t * start_layer = fp->layers[start_layer_index];
+					end_var_start_ind = start_layer->dims;
+					for(i=0; i < start_layer->dims; i++){
+						error = GRBaddvar(model, 0, NULL, NULL, 0.0, -start_layer->neurons[i]->lb, start_layer->neurons[i]->ub, GRB_CONTINUOUS, NULL);
+						handle_gurobi_error(error, env);
+					}
+				}
+				else{
+					end_var_start_ind = fp->num_pixels;
+					for(i=0; i < fp->num_pixels; i++){ // the start layer is the input layer
+						error = GRBaddvar(model, 0, NULL, NULL, 0.0, -fp->input_inf[i], fp->input_sup[i], GRB_CONTINUOUS, NULL);
+						handle_gurobi_error(error, env);
+					}
 
-			// the output constriant, is the range intervals of the start layer of next block 
+				}
+				// add the vars of end layer neurons, where end layer is affine layer according to our segmentation mechanism
+				assert(!fp->layers[k]->is_activation); 
+				layer_t * end_layer = fp->layers[k];
+				neuron_t ** end_neurons = end_layer->neurons;
+				assert(end_layer->dims == fp->layers[ind_next_blk_connection]->dims);
+				for(j = 0; j < end_layer->dims; j++){
+					neuron_t * end_node = end_neurons[j];
+					expr_t * summary_lexpr = end_node->summary_lexpr;
+					expr_t * summary_uexpr = end_node->summary_uexpr;
+					assert(summary_lexpr->type==DENSE);
+					size_t num_pre_neurons = summary_lexpr->size;
+					error = GRBaddvar(model, 0, NULL, NULL, 0.0, -end_node->lb, end_node->ub, GRB_CONTINUOUS, NULL);
+					handle_gurobi_error(error, env);
+					// For upper summary, need to encode the c+ coefficient
+					int ind[num_pre_neurons+1];
+  					double val[num_pre_neurons+1];
+					for(n=0; n < num_pre_neurons; n++){
+						ind[n] = n;
+						val[n] = summary_uexpr->sup_coeff[n];
+					}
+					ind[num_pre_neurons] = end_var_start_ind + j;
+					val[num_pre_neurons] = -1.0;
+					// y <= ax+b  -> ax - y >= -b
+					error = GRBaddconstr(model, num_pre_neurons+1, ind, val, GRB_EQUAL, -summary_uexpr->sup_cst , NULL);
+					handle_gurobi_error(error, env);
+					// For lower summary, need to encode the c- coefficient
+  					double val2[num_pre_neurons+1];
+					for(n=0; n < num_pre_neurons; n++){
+						val2[n] = -summary_lexpr->inf_coeff[n];
+					}
+					val2[num_pre_neurons] = -1.0;
+					// y >= ax+b  -> ax - y <= -b
+					error = GRBaddconstr(model, num_pre_neurons+1, ind, val2, GRB_EQUAL, summary_lexpr->inf_cst, NULL);
+					handle_gurobi_error(error, env);
+					// update model
+					error = GRBupdatemodel(model);
+					handle_gurobi_error(error, env);
+				}
+
+				// add the vars of next start layer neurons, which is Relu connected to the end layer
+				int next_start_var_ind = end_var_start_ind + end_layer->dims;
+				layer_t * start_layer_of_next_blk = fp->layers[ind_next_blk_connection];
+				neuron_t ** relu_neurons = start_layer_of_next_blk->neurons;
+				for(j=0; j < start_layer_of_next_blk->dims; j++){
+					neuron_t * relu_node = relu_neurons[j];
+					neuron_t * input_node = end_neurons[j];
+					// relu interval constaint corresponds to output neuron constraints
+					error = GRBaddvar(model, 0, NULL, NULL, 0.0, -relu_node->lb, relu_node->ub, GRB_CONTINUOUS, NULL);
+					handle_gurobi_error(error, env);
+					// the connection between, depends on the interval of end_layer
+					if(input_node->ub<=0){
+						// stable unactivated relu nodes
+						int ind = next_start_var_ind + j;
+						double val = 1.0;
+						error = GRBaddconstr(model, 1, &ind, &val, GRB_EQUAL, 0.0, NULL);
+						handle_gurobi_error(error, env);
+					}
+					else if(input_node->lb<0){
+						// stable activated relu nodes, y = x, -y +x = 0
+						int ind[2] = {next_start_var_ind + j, end_var_start_ind + j};
+						double val[2] = {-1.0 , 1.0};
+						error = GRBaddconstr(model, 2, ind, val, GRB_EQUAL, 0.0, NULL);
+						handle_gurobi_error(error, env);
+					}
+					else{
+						// unstable relu nodes, add two lower constarints, and also handle FP error for upper constraint
+						// add lower constriant that relu >=0
+						int ind = next_start_var_ind + j;
+						double val = 1.0;
+						error = GRBaddconstr(model, 1, &ind, &val, GRB_GREATER_EQUAL, 0.0, NULL);
+						handle_gurobi_error(error, env);
+						// add lower constraint, y >= x, -y+x <= 0
+						int ind3[2] = {next_start_var_ind + j, end_var_start_ind + j};
+						double val3[2] = {-1.0 , 1.0};
+						error = GRBaddconstr(model, 2, ind3, val3, GRB_LESS_EQUAL, 0.0, NULL);
+						handle_gurobi_error(error, env);
+						// add upper bound, y <= ax+b, -y+ax >= -b
+						int ind2[2] = {next_start_var_ind + j, end_var_start_ind + j};
+						double in_lb = input_node->lb;
+						assert(in_lb>=0);
+						double over_slope = input_node->ub/(input_node->ub+in_lb) + ulp;
+						double val2[2] = {-1.0, over_slope};
+						double over_b = (fabs(in_lb)+ulp)*over_slope + ulp;
+						error = GRBaddconstr(model, 2, ind2, val2, GRB_GREATER_EQUAL, -over_b, NULL);
+						handle_gurobi_error(error, env);
+					}
+					// update model
+					error = GRBupdatemodel(model);
+					handle_gurobi_error(error, env);
+				}
+
+				// solving and updatin neuron status
+				error = GRBoptimize(model);
+				handle_gurobi_error(error, env);
+				error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
+				handle_gurobi_error(error, env);
+				if(optimstatus == GRB_INFEASIBLE){
+					GRBfreemodel(model);
+					GRBfreeenv(env);
+					return true;
+				}
+				// solve for interval of start layer neurons
+				size_t start_layer_num_neurons = (start_layer_index >= 0) ? fp->layers[start_layer_index]->dims : fp->num_pixels;
+				for(i=0; i < start_layer_num_neurons; i++){
+					double solved_lb, solved_ub;
+					error = GRBsetdblattrelement(model, "Obj", i, 1.0);
+					handle_gurobi_error(error, env);
+					// ModelSense, default value 1 indicates minimization, and -1 meaning maximization
+					// lower bound solving
+					error = GRBsetintattr(model, "ModelSense", 1);
+					handle_gurobi_error(error, env);
+					error = GRBupdatemodel(model);
+					handle_gurobi_error(error, env);
+					error = GRBoptimize(model);
+					handle_gurobi_error(error, env);
+					error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &solved_lb);
+					handle_gurobi_error(error, env);
+					// upper bound solving
+					error = GRBsetintattr(model, "ModelSense", -1);
+					handle_gurobi_error(error, env);
+					error = GRBupdatemodel(model);
+					handle_gurobi_error(error, env);
+					error = GRBoptimize(model);
+					handle_gurobi_error(error, env);
+					error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &solved_ub);
+					handle_gurobi_error(error, env);
+					// Update the corresponding input lower and upper bound for next deeppoly execution
+					double lp_solving_error = pow(10.0, -6.0) + ulp;
+					if(start_layer_index >= 0){
+						fp->layers[start_layer_index]->neurons[i]->lb = fmin(-(solved_lb - lp_solving_error),fp->layers[start_layer_index]->neurons[i]->lb);
+						fp->layers[start_layer_index]->neurons[i]->ub = fmin(solved_ub + lp_solving_error,fp->layers[start_layer_index]->neurons[i]->ub);
+					}
+					else{
+						fp->input_inf[i] = -(solved_lb - lp_solving_error);
+						fp->input_sup[i] = solved_ub + lp_solving_error;
+					}
+					// revert obj coeff back to 0
+					error = GRBsetdblattrelement(model, "Obj", i, 0.0);
+					handle_gurobi_error(error, env);
+				}
+				/* Free model */
+				GRBfreemodel(model);
+				/* Free environment */
+				GRBfreeenv(env);
+			}
+			k = (start_layer_index >= 0) ? fp->layers[start_layer_index]->predecessors[0]-1 : -2 ;
 		}
 	}
 	return false;
@@ -895,7 +1071,7 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 		int error = 0;	
 		error = GRBemptyenv(&env);
 		handle_gurobi_error(error, env);
-		error = GRBsetstrparam(env, "LogFile", "LP_solver.log");
+		error = GRBsetstrparam(env, "LogFile", NULL);
 		handle_gurobi_error(error, env);
 		error = GRBstartenv(env);
 		handle_gurobi_error(error, env);
