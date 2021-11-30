@@ -609,7 +609,8 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 				int error = 0;	
 				error = GRBemptyenv(&env);
 				handle_gurobi_error(error, env);
-				error = GRBsetstrparam(env, "LogFile", NULL);
+				// error = GRBsetstrparam(env, "LogFile", NULL);
+				error = GRBsetstrparam(env, "OutputFlag", 0);
 				handle_gurobi_error(error, env);
 				error = GRBstartenv(env);
 				handle_gurobi_error(error, env);
@@ -866,7 +867,8 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 				int error = 0;	
 				error = GRBemptyenv(&env);
 				handle_gurobi_error(error, env);
-				error = GRBsetstrparam(env, "LogFile", NULL);
+				// error = GRBsetstrparam(env, "LogFile", NULL);
+				error = GRBsetstrparam(env, "OutputFlag", 0);
 				handle_gurobi_error(error, env);
 				error = GRBstartenv(env);
 				handle_gurobi_error(error, env);
@@ -1071,7 +1073,8 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 		int error = 0;	
 		error = GRBemptyenv(&env);
 		handle_gurobi_error(error, env);
-		error = GRBsetstrparam(env, "LogFile", NULL);
+		// error = GRBsetstrparam(env, "LogFile", NULL);
+		error = GRBsetstrparam(env, "OutputFlag", 0);
 		handle_gurobi_error(error, env);
 		error = GRBstartenv(env);
 		handle_gurobi_error(error, env);
