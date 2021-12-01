@@ -628,9 +628,11 @@ void* clear_block_summary(elina_manager_t* man, elina_abstract0_t* element){
 		for(j = 0; j < layer->dims; j++){
 			if(neurons[j]->summary_lexpr){
 				free_expr(neurons[j]->summary_lexpr);
+				neurons[j]->summary_lexpr = NULL;
 			}
 			if(neurons[j]->summary_uexpr){
 				free_expr(neurons[j]->summary_uexpr);
+				neurons[j]->summary_uexpr = NULL;
 			}
 		}
 	}
@@ -649,18 +651,22 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 		fp->input_inf[i] = fp->original_input_inf[i];
 		fp->input_sup[i] = fp->original_input_sup[i];
 	}
-	for(i=0; i < fp->numlayers; i++){
-		printf("The start layer of this layer %zu is %d, is activate %d\n", i, fp->layers[i]->start_idx_in_same_blk, fp->layers[i]->is_activation);
-	}
+	// for(i=0; i < fp->numlayers; i++){
+	// 	printf("The start layer of this layer %zu is %d, is activate %d\n", i, fp->layers[i]->start_idx_in_same_blk, fp->layers[i]->is_activation);
+	// }
 	clear_neurons_status(man, element);
 	clear_block_summary(man, element);
-	run_deeppoly(man, element);
+	run_deeppoly_in_block(man, element, -1, numlayers - 1);
 	k = numlayers - 1;
 	while(k>=0){
 		if(k == numlayers - 1){
 			// handle the last block of the network 
 			int start_layer_index = fp->layers[numlayers - 1]->start_idx_in_same_blk;
-			printf("the start_layer_index of last block is %d\n", start_layer_index);
+			if(start_layer_index == numlayers -1){
+				// if the last block just contain one layer, merge it with the previous block
+				start_layer_index = (numlayers >= 2) ? fp->layers[numlayers - 2]->start_idx_in_same_blk : -1;
+			}
+			// printf("the start_layer_index of last block is %d\n", start_layer_index);
 			for(count = 0; count < MAX_ITER; count++){
 				// refinement within this block for MAX_ITER times
 				if(count!=0)
@@ -924,7 +930,7 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 			int ind_next_blk_connection = k + 1;
 			for(count = 0; count < MAX_ITER; count++){
 				if(count!=0)
-					run_deeppoly_in_block(man, element, start_layer_index, numlayers - 1);
+					run_deeppoly_in_block(man, element, start_layer_index, k);
 				GRBenv *env   = NULL;
 				GRBmodel *model = NULL;
 				int error = 0;	
@@ -953,7 +959,6 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 						error = GRBaddvar(model, 0, NULL, NULL, 0.0, -fp->input_inf[i], fp->input_sup[i], GRB_CONTINUOUS, NULL);
 						handle_gurobi_error(error, env);
 					}
-
 				}
 				// add the vars of end layer neurons, where end layer is affine layer according to our segmentation mechanism
 				assert(!fp->layers[k]->is_activation); 

@@ -369,6 +369,7 @@ void * update_state_layer_by_layer_lb(void *args)
 	fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	size_t layerno = data->layerno;
 	int k = data->k;
+	bool is_blk_segmentation = data->is_blk_segmentation;
 	size_t idx_start = data->start;
 	size_t idx_end = data->end;
 	size_t i;
@@ -378,6 +379,9 @@ void * update_state_layer_by_layer_lb(void *args)
 	{
 		bool already_computed = false;
 		//evaluate constraint defined over k, and further back-sub to k-1
+		if(is_blk_segmentation && fp->layers[layerno]->is_end_layer_of_blk && (k==fp->layers[layerno]->start_idx_in_same_blk)){
+			out_neurons[i]->summary_lexpr = copy_expr(out_neurons[i]->backsubstituted_lexpr);
+		}
 		out_neurons[i]->lb = fmin(out_neurons[i]->lb, get_lb_using_prev_layer(man, fp, &out_neurons[i]->backsubstituted_lexpr, k));
 		// printf("lower bound is %.6f\n", out_neurons[i]->lb);
 	}
@@ -392,6 +396,7 @@ void *update_state_layer_by_layer_ub(void *args)
 	fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	size_t layerno = data->layerno;
 	int k = data->k;
+	bool is_blk_segmentation = data->is_blk_segmentation;
 	size_t idx_start = data->start;
 	size_t idx_end = data->end;
 	size_t i;
@@ -400,6 +405,9 @@ void *update_state_layer_by_layer_ub(void *args)
 	for (i = idx_start; i < idx_end; i++)
 	{
 		bool already_computed = false;
+		if(is_blk_segmentation && fp->layers[layerno]->is_end_layer_of_blk && (k==fp->layers[layerno]->start_idx_in_same_blk)){
+			out_neurons[i]->summary_uexpr = copy_expr(out_neurons[i]->backsubstituted_uexpr);
+		}
 		//evaluate constraint defined over k, and further back-sub to k-1
 		out_neurons[i]->ub = fmin(out_neurons[i]->ub, get_ub_using_prev_layer(man, fp, &out_neurons[i]->backsubstituted_uexpr, k));
 		// printf("upper bound is %.6f\n", out_neurons[i]->ub);
@@ -498,6 +506,7 @@ void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, si
 				args[i].man = man;
 				args[i].fp = fp;
 				args[i].layerno = layerno;
+				args[i].is_blk_segmentation = is_blk_segmentation;
 				args[i].k = k;
 				args[i].linexpr0 = NULL;
 				args[i].res = NULL;
@@ -520,6 +529,7 @@ void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, si
 				args[i].man = man;
 				args[i].fp = fp;
 				args[i].layerno = layerno;
+				args[i].is_blk_segmentation = is_blk_segmentation;
 				args[i].k = k;
 				args[i].linexpr0 = NULL;
 				args[i].res = NULL;
@@ -549,6 +559,7 @@ void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, si
 				args[i].man = man;
 				args[i].fp = fp;
 				args[i].layerno = layerno;
+				args[i].is_blk_segmentation = is_blk_segmentation;
 				args[i].k = k;
 				args[i].linexpr0 = NULL;
 				args[i].res = NULL;
@@ -571,6 +582,7 @@ void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, si
 				args[i].man = man;
 				args[i].fp = fp;
 				args[i].layerno = layerno;
+				args[i].is_blk_segmentation = is_blk_segmentation;
 				args[i].k = k;
 				args[i].linexpr0 = NULL;
 				args[i].res = NULL;
@@ -629,6 +641,7 @@ void update_state_layer_by_layer_parallel_until_certain_layer(elina_manager_t *m
 				args[i].man = man;
 				args[i].fp = fp;
 				args[i].layerno = layerno;
+				args[i].is_blk_segmentation = is_blk_segmentation;
 				args[i].k = k;
 				args[i].linexpr0 = NULL;
 				args[i].res = NULL;
@@ -651,6 +664,7 @@ void update_state_layer_by_layer_parallel_until_certain_layer(elina_manager_t *m
 				args[i].man = man;
 				args[i].fp = fp;
 				args[i].layerno = layerno;
+				args[i].is_blk_segmentation = is_blk_segmentation;
 				args[i].k = k;
 				args[i].linexpr0 = NULL;
 				args[i].res = NULL;
@@ -680,6 +694,7 @@ void update_state_layer_by_layer_parallel_until_certain_layer(elina_manager_t *m
 				args[i].man = man;
 				args[i].fp = fp;
 				args[i].layerno = layerno;
+				args[i].is_blk_segmentation = is_blk_segmentation;
 				args[i].k = k;
 				args[i].linexpr0 = NULL;
 				args[i].res = NULL;
@@ -702,6 +717,7 @@ void update_state_layer_by_layer_parallel_until_certain_layer(elina_manager_t *m
 				args[i].man = man;
 				args[i].fp = fp;
 				args[i].layerno = layerno;
+				args[i].is_blk_segmentation = is_blk_segmentation;
 				args[i].k = k;
 				args[i].linexpr0 = NULL;
 				args[i].res = NULL;
