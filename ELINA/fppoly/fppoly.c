@@ -285,7 +285,6 @@ void handle_fully_connected_layer_no_alloc(elina_manager_t* man, elina_abstract0
     handle_fully_connected_layer_with_backsubstitute(man, abs, weights, bias, size, num_pixels, predecessors, num_predecessors, false, MATMULT, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
 }
 
-
 void handle_fully_connected_layer(elina_manager_t* man, elina_abstract0_t * abs, double **weights, double *bias,   size_t size, size_t num_pixels, size_t *predecessors, size_t num_predecessors, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool var_cancel_heuristic){
      handle_fully_connected_layer_with_backsubstitute(man, abs, weights, bias, size, num_pixels, predecessors, num_predecessors, true, MATMULT, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
 }
@@ -303,7 +302,6 @@ void layer_fprint(FILE * stream, layer_t * layer, char** name_of_dim){
 		neuron_fprint(stream, layer->neurons[i], name_of_dim);
 	}
 }
-
 
 void coeff_to_interval(elina_coeff_t *coeff, double *inf, double *sup){
 	double d;
@@ -558,6 +556,52 @@ void* run_deeppoly(elina_manager_t* man, elina_abstract0_t* element){
 }
 
 void* run_deeppoly_in_block(elina_manager_t* man, elina_abstract0_t* element, int block_start_layer, int block_end_layer){
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	size_t numlayers = fp->numlayers;
+	size_t i, j;
+	for (j = block_start_layer+1; j <= block_end_layer; j++){
+		if(!fp->layers[j]->is_activation){
+			neuron_t **neurons = fp->layers[j]->neurons;
+			for(i=0; i < fp->layers[j]->dims; i++){
+				// free previous analysis footprint
+				if(neurons[i]->backsubstituted_lexpr){
+					free_expr(neurons[i]->backsubstituted_lexpr);
+				}
+				neurons[i]->backsubstituted_lexpr = copy_expr(neurons[i]->lexpr);
+				if(neurons[i]->backsubstituted_uexpr){
+					free_expr(neurons[i]->backsubstituted_uexpr);
+				}
+				neurons[i]->backsubstituted_uexpr = copy_expr(neurons[i]->uexpr);
+				if(neurons[i]->summary_lexpr){
+					free_expr(neurons[i]->summary_lexpr);
+					neurons[i]->summary_lexpr = NULL;
+				}
+				if(neurons[i]->summary_uexpr){
+					free_expr(neurons[i]->summary_uexpr);
+					neurons[i]->summary_uexpr = NULL;
+				}
+			}	
+			update_state_layer_by_layer_parallel_until_certain_layer(man,fp, j, true, block_start_layer);
+		}
+		else{
+			int k = fp->layers[j]->predecessors[0]-1;
+			layer_t *predecessor_layer = fp->layers[k];
+			neuron_t **in_neurons = fp->layers[k]->neurons;
+			neuron_t **out_neurons = fp->layers[j]->neurons;
+			for(i=0; i < fp->layers[j]->dims; i++){
+				out_neurons[i]->lb = -fmax(0.0, -in_neurons[i]->lb);
+				out_neurons[i]->ub = fmax(0,in_neurons[i]->ub);
+				if(out_neurons[i]->lexpr){
+					free_expr(out_neurons[i]->lexpr);
+				}
+				out_neurons[i]->lexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, true, true, false);
+				if(out_neurons[i]->uexpr){
+					free_expr(out_neurons[i]->uexpr);
+				}
+				out_neurons[i]->uexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, true, false, false);
+			}
+		}
+	}
 	return NULL;
 }
 
@@ -576,6 +620,20 @@ void* clear_neurons_status(elina_manager_t* man, elina_abstract0_t* element){
 }
 
 void* clear_block_summary(elina_manager_t* man, elina_abstract0_t* element){
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	size_t i, j;
+	for(i = 0; i < fp->numlayers; i++){
+		layer_t *layer = fp->layers[i];
+		neuron_t ** neurons = layer->neurons;
+		for(j = 0; j < layer->dims; j++){
+			if(neurons[j]->summary_lexpr){
+				free_expr(neurons[j]->summary_lexpr);
+			}
+			if(neurons[j]->summary_uexpr){
+				free_expr(neurons[j]->summary_uexpr);
+			}
+		}
+	}
 	return NULL;
 }
 
@@ -591,6 +649,9 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 		fp->input_inf[i] = fp->original_input_inf[i];
 		fp->input_sup[i] = fp->original_input_sup[i];
 	}
+	for(i=0; i < fp->numlayers; i++){
+		printf("The start layer of this layer %zu is %d, is activate %d\n", i, fp->layers[i]->start_idx_in_same_blk, fp->layers[i]->is_activation);
+	}
 	clear_neurons_status(man, element);
 	clear_block_summary(man, element);
 	run_deeppoly(man, element);
@@ -599,6 +660,7 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 		if(k == numlayers - 1){
 			// handle the last block of the network 
 			int start_layer_index = fp->layers[numlayers - 1]->start_idx_in_same_blk;
+			printf("the start_layer_index of last block is %d\n", start_layer_index);
 			for(count = 0; count < MAX_ITER; count++){
 				// refinement within this block for MAX_ITER times
 				if(count!=0)
@@ -858,6 +920,7 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 		else{
 			// handle refinement through other blocks, where the encoding comes from block summaries
 			int start_layer_index = fp->layers[k]->start_idx_in_same_blk;
+			printf("the start_layer_index of rest block is %d\n", start_layer_index);
 			int ind_next_blk_connection = k + 1;
 			for(count = 0; count < MAX_ITER; count++){
 				if(count!=0)

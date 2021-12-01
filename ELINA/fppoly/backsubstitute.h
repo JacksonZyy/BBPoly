@@ -36,6 +36,7 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t 
 
 void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool layer_by_layer,  bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool var_cancel_heuristic);
 
+void update_state_layer_by_layer_parallel_until_certain_layer(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool layer_by_layer, int block_start_layer);
 #ifdef __cplusplus
  }
 #endif

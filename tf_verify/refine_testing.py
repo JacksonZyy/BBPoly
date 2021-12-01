@@ -337,7 +337,7 @@ for i, test in enumerate(tests):
 
         # execution with corresponding parameters
         start = time.time() 
-        print(config.refine_max_iter)
+        # print(config.refine_max_iter)
         eran_result = eran.analyze_with_ground_truth_label(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, is_refinement=config.is_refinement, REFINE_MAX_ITER=config.refine_max_iter, label=actual_label)
         # eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, label=actual_label)
         end = time.time()

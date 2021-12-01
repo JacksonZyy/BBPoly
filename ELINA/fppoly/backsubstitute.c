@@ -413,6 +413,66 @@ void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, si
 	nn_thread_t args[NUM_THREADS];
 	pthread_t threads[NUM_THREADS];
 	size_t num_out_neurons = fp->layers[layerno]->dims;
+	if(is_blk_segmentation){
+		//the session to mark the end-of-block/start-of-block layer
+		if(is_residual && (fp->layers[layerno]->num_predecessors==2)){
+			//identify the start layer for residual block
+			size_t predecessor1 = fp->layers[layerno]->predecessors[0]-1;
+			size_t predecessor2 = fp->layers[layerno]->predecessors[1]-1;
+			char * predecessor_map = (char *)calloc(layerno,sizeof(char));
+			int iter = fp->layers[predecessor1]->predecessors[0]-1;
+			while(iter>=0){
+				predecessor_map[iter] = 1;
+				iter = fp->layers[iter]->predecessors[0]-1;
+			}
+			iter =  fp->layers[predecessor2]->predecessors[0]-1;
+			int common_predecessor = 0;
+			while(iter>=0){
+				if(predecessor_map[iter] == 1){
+					common_predecessor = iter;
+					break;
+				}
+				iter = fp->layers[iter]->predecessors[0]-1;
+			}
+			free(predecessor_map);
+			fp->layers[common_predecessor]->is_start_layer_of_blk = true;
+			fp->layers[layerno]->start_idx_in_same_blk = common_predecessor;
+			iter = predecessor1;
+			while(iter!=common_predecessor){
+				fp->layers[iter]->start_idx_in_same_blk = common_predecessor;
+				iter = fp->layers[iter]->predecessors[0]-1;
+			}
+			iter =  predecessor2;
+			while(iter!=common_predecessor){
+				fp->layers[iter]->start_idx_in_same_blk = common_predecessor;
+				iter = fp->layers[iter]->predecessors[0]-1;					
+			}
+			//set the end layer 
+			fp->layers[layerno]->is_end_layer_of_blk = true;
+		}
+		else if(!is_residual && ((layerno+2)%(2*blk_size) == 0)){
+			fp->layers[layerno]->is_end_layer_of_blk = true;
+		}
+	}
+	//the session to set the start_idx_in_same_blk
+	if(is_blk_segmentation){
+		if(!is_residual){
+			if(layerno==0){
+				fp->layers[layerno]->start_idx_in_same_blk = -1;
+			}
+			else{
+				int predecessor = fp->layers[layerno]->predecessors[0]-1;
+				layer_t *predecessor_layer = fp->layers[predecessor];
+				if(predecessor_layer->is_end_layer_of_blk){
+					fp->layers[layerno]->is_start_layer_of_blk = true;
+					fp->layers[layerno]->start_idx_in_same_blk = layerno;
+				}else{
+					fp->layers[layerno]->start_idx_in_same_blk = predecessor_layer->start_idx_in_same_blk;
+				}
+			}
+		}
+	}
+	// printf("set up the block info\n");
 	size_t i;
 	int k;
 	if (fp->numlayers == layerno)
@@ -536,6 +596,139 @@ void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, si
 		k = fp->layers[k]->predecessors[0] - 1;
 	}
 }
+
+void update_state_layer_by_layer_parallel_until_certain_layer(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool is_blk_segmentation, int block_start_layer)
+{
+	size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
+	nn_thread_t args[NUM_THREADS];
+	pthread_t threads[NUM_THREADS];
+	size_t num_out_neurons = fp->layers[layerno]->dims;
+	size_t i;
+	int k;
+	// The back-substitution stops at certain layer, which is block_start_layer
+	if (fp->numlayers == layerno)
+	{
+		k = layerno - 1;
+	}
+	else if ((fp->layers[layerno]->is_concat == true) || (fp->layers[layerno]->num_predecessors == 2))
+	{
+		k = layerno;
+	}
+	else
+	{
+		k = fp->layers[layerno]->predecessors[0] - 1;
+	}
+	while (k >= block_start_layer)
+	{
+		if (num_out_neurons < NUM_THREADS)
+		{
+			for (i = 0; i < num_out_neurons; i++)
+			{
+				args[i].start = i;
+				args[i].end = i + 1;
+				args[i].man = man;
+				args[i].fp = fp;
+				args[i].layerno = layerno;
+				args[i].k = k;
+				args[i].linexpr0 = NULL;
+				args[i].res = NULL;
+				pthread_create(&threads[i], NULL, update_state_layer_by_layer_lb, (void *)&args[i]);
+			}
+			for (i = 0; i < num_out_neurons; i = i + 1)
+			{
+				pthread_join(threads[i], NULL);
+			}
+		}
+		else
+		{
+			size_t idx_start = 0;
+			size_t idx_n = num_out_neurons / NUM_THREADS;
+			size_t idx_end = idx_start + idx_n;
+			for (i = 0; i < NUM_THREADS; i++)
+			{
+				args[i].start = idx_start;
+				args[i].end = idx_end;
+				args[i].man = man;
+				args[i].fp = fp;
+				args[i].layerno = layerno;
+				args[i].k = k;
+				args[i].linexpr0 = NULL;
+				args[i].res = NULL;
+				pthread_create(&threads[i], NULL, update_state_layer_by_layer_lb, (void *)&args[i]);
+				idx_start = idx_end;
+				idx_end = idx_start + idx_n;
+				if (idx_end > num_out_neurons)
+				{
+					idx_end = num_out_neurons;
+				}
+				if ((i == NUM_THREADS - 2))
+				{
+					idx_end = num_out_neurons;
+				}
+			}
+			for (i = 0; i < NUM_THREADS; i = i + 1)
+			{
+				pthread_join(threads[i], NULL);
+			}
+		}
+		if (num_out_neurons < NUM_THREADS)
+		{
+			for (i = 0; i < num_out_neurons; i++)
+			{
+				args[i].start = i;
+				args[i].end = i + 1;
+				args[i].man = man;
+				args[i].fp = fp;
+				args[i].layerno = layerno;
+				args[i].k = k;
+				args[i].linexpr0 = NULL;
+				args[i].res = NULL;
+				pthread_create(&threads[i], NULL, update_state_layer_by_layer_ub, (void *)&args[i]);
+			}
+			for (i = 0; i < num_out_neurons; i = i + 1)
+			{
+				pthread_join(threads[i], NULL);
+			}
+		}
+		else
+		{
+			size_t idx_start = 0;
+			size_t idx_n = num_out_neurons / NUM_THREADS;
+			size_t idx_end = idx_start + idx_n;
+			for (i = 0; i < NUM_THREADS; i++)
+			{
+				args[i].start = idx_start;
+				args[i].end = idx_end;
+				args[i].man = man;
+				args[i].fp = fp;
+				args[i].layerno = layerno;
+				args[i].k = k;
+				args[i].linexpr0 = NULL;
+				args[i].res = NULL;
+				pthread_create(&threads[i], NULL, update_state_layer_by_layer_ub, (void *)&args[i]);
+				idx_start = idx_end;
+				idx_end = idx_start + idx_n;
+				if (idx_end > num_out_neurons)
+				{
+					idx_end = num_out_neurons;
+				}
+				if ((i == NUM_THREADS - 2))
+				{
+					idx_end = num_out_neurons;
+				}
+			}
+			for (i = 0; i < NUM_THREADS; i = i + 1)
+			{
+				pthread_join(threads[i], NULL);
+			}
+		}
+		if (k < 0)
+			break;
+		k = fp->layers[k]->predecessors[0] - 1;
+	}
+}
+
+
 // end of layer-by-layer analysis coding
 
 /* end of the code */
