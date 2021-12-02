@@ -343,6 +343,7 @@ for i, test in enumerate(tests):
         end = time.time()
         overall_time = overall_time + end - start
         dominant_class = eran_result[0]
+        print(eran_result[2][-1], eran_result[3][-1])
         if(dominant_class == actual_label):
             verified_images = verified_images + 1
             print("image ", i, " success!")

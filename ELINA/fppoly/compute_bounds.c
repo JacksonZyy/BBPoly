@@ -589,7 +589,7 @@ expr_t * copy_empty_expr(expr_t *src){
 	return dst;
 }
 
-double get_lb_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr, int k)
+double get_lb_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr, int k, bool is_blk_segmentation)
 {
 	size_t i;
 	expr_t *lexpr = copy_expr(*expr);
@@ -598,7 +598,12 @@ double get_lb_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr
 	double lb = 0;
 	if (k >= 0)
 	{
-		lb = get_lb_using_predecessor_layer(pr, fp, &lexpr, k, 0, NULL, true, false);
+		if(is_blk_segmentation && fp->layers[k]->is_end_layer_of_blk){
+			lb = get_lb_using_summary_over_input(pr,fp, &lexpr, k);
+		}
+		else{
+			lb = get_lb_using_predecessor_layer(pr, fp, &lexpr, k, 0, NULL, true, false);
+		}
 		res = fmin(res, lb);
 	}
 	else
@@ -611,7 +616,7 @@ double get_lb_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr
 	return res;
 }
 
-double get_ub_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr, int k)
+double get_ub_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr, int k, bool is_blk_segmentation)
 {
 	size_t i;
 	expr_t *uexpr = copy_expr(*expr);
@@ -619,7 +624,12 @@ double get_ub_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr
 	double res = INFINITY;
 	if (k >= 0)
 	{
-		res = fmin(res, get_ub_using_predecessor_layer(pr, fp, &uexpr, k, 0, NULL, true, false));
+		if(is_blk_segmentation && fp->layers[k]->is_end_layer_of_blk){
+			res = fmin(res, get_ub_using_summary_over_input(pr,fp, &uexpr, k));
+		}
+		else{
+			res = fmin(res, get_ub_using_predecessor_layer(pr, fp, &uexpr, k, 0, NULL, true, false));
+		}
 	}
 	else
 	{

@@ -471,11 +471,16 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 		k = fp->numlayers - 1;
 		while (k >= -1)
 		{
-			double cur_lb = get_lb_using_prev_layer(man, fp, &backsubstituted_lexpr, k);
+			double cur_lb = get_lb_using_prev_layer(man, fp, &backsubstituted_lexpr, k, is_blk_segmentation);
 			lb = fmin(lb, cur_lb);
 			if (k < 0 || lb < 0)
 				break;
-			k = fp->layers[k]->predecessors[0] - 1;
+			if(is_blk_segmentation && fp->layers[k]->is_end_layer_of_blk){
+				k = fp->layers[k]->start_idx_in_same_blk;
+			}
+			else{
+				k = fp->layers[k]->predecessors[0] - 1;
+			}
 		}
 	}
 	else{
@@ -1410,11 +1415,16 @@ double label_deviation_lb(elina_manager_t* man, elina_abstract0_t* element, elin
 		k = fp->numlayers - 1;
 		while (k >= -1)
 		{
-			double cur_lb = get_lb_using_prev_layer(man, fp, &backsubstituted_lexpr, k);
+			double cur_lb = get_lb_using_prev_layer(man, fp, &backsubstituted_lexpr, k, is_blk_segmentation);
 			lb = fmin(lb, cur_lb);
 			if (k < 0 || lb < 0)
 				break;
-			k = fp->layers[k]->predecessors[0] - 1;
+			if(is_blk_segmentation && fp->layers[k]->is_end_layer_of_blk){
+				k = fp->layers[k]->start_idx_in_same_blk;
+			}
+			else{
+				k = fp->layers[k]->predecessors[0] - 1;
+			}
 		}
 	}
 	else{

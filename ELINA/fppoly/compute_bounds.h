@@ -42,9 +42,9 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 
 double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t **expr, size_t layerno, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool var_cancel_heuristic);
 
-double get_lb_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr, int k);
+double get_lb_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr, int k, bool is_blk_segmentation);
 
-double get_ub_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr, int k);
+double get_ub_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr, int k, bool is_blk_segmentation);
 
 #ifdef __cplusplus
  }

@@ -382,7 +382,7 @@ void * update_state_layer_by_layer_lb(void *args)
 		if(is_blk_segmentation && fp->layers[layerno]->is_end_layer_of_blk && (k==fp->layers[layerno]->start_idx_in_same_blk)){
 			out_neurons[i]->summary_lexpr = copy_expr(out_neurons[i]->backsubstituted_lexpr);
 		}
-		out_neurons[i]->lb = fmin(out_neurons[i]->lb, get_lb_using_prev_layer(man, fp, &out_neurons[i]->backsubstituted_lexpr, k));
+		out_neurons[i]->lb = fmin(out_neurons[i]->lb, get_lb_using_prev_layer(man, fp, &out_neurons[i]->backsubstituted_lexpr, k, is_blk_segmentation));
 		// printf("lower bound is %.6f\n", out_neurons[i]->lb);
 	}
 	return NULL;
@@ -409,7 +409,7 @@ void *update_state_layer_by_layer_ub(void *args)
 			out_neurons[i]->summary_uexpr = copy_expr(out_neurons[i]->backsubstituted_uexpr);
 		}
 		//evaluate constraint defined over k, and further back-sub to k-1
-		out_neurons[i]->ub = fmin(out_neurons[i]->ub, get_ub_using_prev_layer(man, fp, &out_neurons[i]->backsubstituted_uexpr, k));
+		out_neurons[i]->ub = fmin(out_neurons[i]->ub, get_ub_using_prev_layer(man, fp, &out_neurons[i]->backsubstituted_uexpr, k, is_blk_segmentation));
 		// printf("upper bound is %.6f\n", out_neurons[i]->ub);
 	}
 	return NULL;
@@ -605,7 +605,13 @@ void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, si
 		}
 		if (k < 0)
 			break;
-		k = fp->layers[k]->predecessors[0] - 1;
+		if(is_blk_segmentation && fp->layers[k]->is_end_layer_of_blk){
+			k = fp->layers[k]->start_idx_in_same_blk;
+		}
+		else{
+			k = fp->layers[k]->predecessors[0] - 1;
+		}
+		
 	}
 }
 
@@ -740,7 +746,12 @@ void update_state_layer_by_layer_parallel_until_certain_layer(elina_manager_t *m
 		}
 		if (k < 0)
 			break;
-		k = fp->layers[k]->predecessors[0] - 1;
+		if(is_blk_segmentation && fp->layers[k]->is_end_layer_of_blk){
+			k = fp->layers[k]->start_idx_in_same_blk;
+		}
+		else{
+			k = fp->layers[k]->predecessors[0] - 1;
+		}
 	}
 }
 
