@@ -561,6 +561,7 @@ void* run_deeppoly(elina_manager_t* man, elina_abstract0_t* element){
 }
 
 void* run_deeppoly_in_block(elina_manager_t* man, elina_abstract0_t* element, int block_start_layer, int block_end_layer){
+	// only execute in modular analysis in the refinement procedure
 	fppoly_t *fp = fppoly_of_abstract0(element);
 	size_t numlayers = fp->numlayers;
 	size_t i, j;
@@ -1134,6 +1135,12 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	// printf("before clear neurons\n");
 	// For new CEX pruning, clear the previous analysis bounds
 	clear_neurons_status(man, element);
+	run_deeppoly(man, element);
+	for(i=0; i < fp->layers[numlayers-1]->dims; i++){
+		// set the input neurons back to the original input space
+		printf("lb and ub are %.4f, %.4f respectively\n", -fp->layers[numlayers-1]->neurons[i]->lb, fp->layers[numlayers-1]->neurons[i]->ub);
+	}
+	return false;
 	// printf("clear_neurons_status end\n");
 	// Refine for MAX_ITER times
 	for(count = 0; count < MAX_ITER; count++){
