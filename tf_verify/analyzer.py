@@ -231,7 +231,7 @@ class Analyzer:
         assert self.output_constraints is None, "The output constraints are supposed to be None"
         assert self.prop == -1, "The prop are supposed to be deactivated"
         element, nlb, nub = self.get_abstract0()
-        print(nlb[-1], nub[-1])
+        # print(nlb[-1], nub[-1])
         output_size = 0
         output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
         # print(output_size)
@@ -268,7 +268,7 @@ class Analyzer:
             sorted_d = dict(sorted(potential_adv_labels.items(), key=lambda x: x[1],reverse=True))
             spurious_list = []
             spurious_count = 0
-            print(sorted_d)
+            # print(sorted_d)
             for poten_cex in sorted_d:
                 if self.is_spurious(self.man, element, ground_truth_label, poten_cex, self.layer_by_layer, self.is_blk_segmentation, self.blk_size, self.is_sum_def_over_input, spurious_list, spurious_count, self.MAX_ITER):
                     potential_adv_count = potential_adv_count - 1

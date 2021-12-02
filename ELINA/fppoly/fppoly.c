@@ -1132,16 +1132,17 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 		fp->input_inf[i] = fp->original_input_inf[i];
 		fp->input_sup[i] = fp->original_input_sup[i];
 	}
-	// printf("before clear neurons\n");
 	// For new CEX pruning, clear the previous analysis bounds
 	clear_neurons_status(man, element);
+	/* sanity checking code fragment
 	run_deeppoly(man, element);
 	for(i=0; i < fp->layers[numlayers-1]->dims; i++){
 		// set the input neurons back to the original input space
 		printf("lb and ub are %.4f, %.4f respectively\n", -fp->layers[numlayers-1]->neurons[i]->lb, fp->layers[numlayers-1]->neurons[i]->ub);
 	}
 	return false;
-	// printf("clear_neurons_status end\n");
+	*/
+
 	// Refine for MAX_ITER times
 	for(count = 0; count < MAX_ITER; count++){
 		// run deeppoly() firstly to get all the constraints (for the relu ones in particular, since affine constraint doesn't change)
