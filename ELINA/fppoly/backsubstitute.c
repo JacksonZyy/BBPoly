@@ -195,7 +195,7 @@ void * update_state_using_previous_layers(void *args){
 	bool is_early_terminate = data->is_early_terminate;
 	int early_termi_thre = data->early_termi_thre;
 	bool is_sum_def_over_input = data->is_sum_def_over_input;
-	bool var_cancel_heuristic = data->var_cancel_heuristic;
+	bool is_refinement = data->is_refinement;
 	fppoly_internal_t * pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
 	size_t layerno = data->layerno;
 	size_t idx_start = data->start;
@@ -211,8 +211,8 @@ void * update_state_using_previous_layers(void *args){
 		expr_t *uexpr = copy_expr(out_neurons[i]->uexpr);
 		// expr_print(lexpr);
 		// printf("layerno is %zu\n",layerno);
-		out_neurons[i]->lb = get_lb_using_previous_layers(man, fp, &lexpr, layerno, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
-		out_neurons[i]->ub = get_ub_using_previous_layers(man, fp, &uexpr, layerno, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic);
+		out_neurons[i]->lb = get_lb_using_previous_layers(man, fp, &lexpr, layerno, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement);
+		out_neurons[i]->ub = get_ub_using_previous_layers(man, fp, &uexpr, layerno, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement);
 		// printf("lb, ub are %.2f, %.2f for neuron %zu\n", out_neurons[i]->lb,out_neurons[i]->ub, i);
 		if(!layer_by_layer && is_blk_segmentation && fp->layers[layerno]->is_end_layer_of_blk){
 			out_neurons[i]->summary_lexpr = lexpr;
@@ -229,7 +229,7 @@ void * update_state_using_previous_layers(void *args){
 	return NULL;
 }
 
-void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool layer_by_layer,  bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool var_cancel_heuristic){
+void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool layer_by_layer,  bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool is_refinement){
   	size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
 	nn_thread_t args[NUM_THREADS];
 	pthread_t threads[NUM_THREADS];
@@ -294,6 +294,10 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t 
 			}
 		}
 	}
+	if(is_blk_segmentation && is_refinement){
+		// only apply modular for refinement process, not for original deeppoly execution
+		is_blk_segmentation = false;
+	}
 	size_t i;
 	int k = fp->layers[layerno]->predecessors[0] - 1;;
 	//Set the global ReLU nodes in here
@@ -313,7 +317,7 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t 
 			args[i].is_early_terminate = is_early_terminate;
 	    	args[i].early_termi_thre = early_termi_thre;
 	    	args[i].is_sum_def_over_input = is_sum_def_over_input;
-			args[i].var_cancel_heuristic = var_cancel_heuristic;
+			args[i].is_refinement = is_refinement;
 			pthread_create(&threads[i], NULL,update_state_using_previous_layers, (void*)&args[i]);
 			
 	  	}
@@ -340,7 +344,7 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t 
 			args[i].is_early_terminate = is_early_terminate;
 	    	args[i].early_termi_thre = early_termi_thre;
 	    	args[i].is_sum_def_over_input = is_sum_def_over_input;
-			args[i].var_cancel_heuristic = var_cancel_heuristic;
+			args[i].is_refinement = is_refinement;
 	    	pthread_create(&threads[i], NULL,update_state_using_previous_layers, (void*)&args[i]);
 			idx_start = idx_end;
 			idx_end = idx_start + idx_n;
@@ -415,7 +419,7 @@ void *update_state_layer_by_layer_ub(void *args)
 	return NULL;
 }
 
-void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool layer_by_layer,  bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool var_cancel_heuristic)
+void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, size_t layerno, bool layer_by_layer,  bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool is_refinement)
 {
 	size_t NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
 	nn_thread_t args[NUM_THREADS];
@@ -481,6 +485,10 @@ void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, si
 		}
 	}
 	// printf("set up the block info\n");
+	if(is_blk_segmentation && is_refinement){
+		// only apply modular for refinement process, not for original deeppoly execution
+		is_blk_segmentation = false;
+	}
 	size_t i;
 	int k;
 	if (fp->numlayers == layerno)

@@ -221,7 +221,7 @@ class DeeppolyNode:
 
 
 class DeeppolyFCNode(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
         """
         transformer for the first layer of a neural network, if that first layer is fully connected with relu
         
@@ -237,7 +237,7 @@ class DeeppolyFCNode(DeeppolyNode):
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        handle_fully_connected_layer(man, element, *self.get_arguments(), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_fully_connected_layer(man, element, *self.get_arguments(), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=refine)
         nn.ffn_counter+=1
         if testing:
@@ -281,7 +281,7 @@ class DeeppolyNonlinearity:
 
 
 class DeeppolyReluNode(DeeppolyNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
         """
         transforms element with handle_relu_layer
         
@@ -302,7 +302,7 @@ class DeeppolyReluNode(DeeppolyNonlinearity):
             # refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
             print("Call up refinement function\n")
         else:
-            handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic, is_blk_segmentation, blk_size, is_residual, var_cancel_heuristic)
+            handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic, is_blk_segmentation, blk_size, is_residual, is_refinement)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=False)
         nn.activation_counter+=1
         if testing:
@@ -354,7 +354,7 @@ class DeeppolyConv2dNode:
         return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.out_size, self.pad_top, self.pad_left, True, self.predecessors, len(self.predecessors)
 
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
         """
         transformer for a convolutional layer, if that layer is an intermediate of the network
         
@@ -371,7 +371,7 @@ class DeeppolyConv2dNode:
             abstract element after the transformer 
         """
         #print("Deeppoly node call handle_convolutional_layer with flag layer_by_layer equals to ", layer_by_layer)
-        handle_convolutional_layer(man, element, *self.get_arguments(), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_convolutional_layer(man, element, *self.get_arguments(), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
         #print("End handle_convolutional_layer")
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.conv_counter+=1
@@ -394,8 +394,8 @@ class DeeppolyResidualNode:
         #print("Residual predecessor", self.predecessors)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
-        handle_residual_layer(man,element,self.output_length,self.predecessors, len(self.predecessors), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
+        handle_residual_layer(man,element,self.output_length,self.predecessors, len(self.predecessors), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, use_krelu=refine, is_refine_layer=True)
         # print("Residual ", nn.layertypes[layerno],layerno)
         nn.residual_counter += 1
@@ -422,7 +422,7 @@ class DeeppolyGather:
         self.indexes = np.ascontiguousarray(indexes, dtype=np.uintp)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
         print("How can you possibly find its definition??")
         handle_gather_layer(man, element, self.indexes)
         return element
@@ -446,10 +446,10 @@ class DeeppolySubNode:
         self.is_minuend = is_minuend
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
         layerno = nn.calc_layerno()
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
-        handle_sub_layer(man, element, self.bias, self.is_minuend, num_neurons, self.predecessors, len(self.predecessors), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_sub_layer(man, element, self.bias, self.is_minuend, num_neurons, self.predecessors, len(self.predecessors), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
         if testing:
@@ -474,8 +474,8 @@ class DeeppolyMulNode:
         self.bias = np.ascontiguousarray(bias.reshape(-1), dtype=np.float64)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
-        handle_mul_layer(man, element, self.bias, len(self.bias.reshape(-1)), self.predecessors, len(self.predecessors), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
+        handle_mul_layer(man, element, self.bias, len(self.bias.reshape(-1)), self.predecessors, len(self.predecessors), layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
         if testing:

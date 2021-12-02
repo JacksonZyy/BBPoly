@@ -1,6 +1,6 @@
 #include "relu_approx.h"
 
-expr_t * create_relu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, bool use_default_heuristics, bool is_lower, bool var_cancel_heuristic){
+expr_t * create_relu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, bool use_default_heuristics, bool is_lower, bool is_refinement){
 	expr_t * res = alloc_expr();  
 	res->inf_coeff = (double *)malloc(sizeof(double));
 	res->sup_coeff = (double *)malloc(sizeof(double));
@@ -26,12 +26,6 @@ expr_t * create_relu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, b
 	}
 		
 	else if(is_lower){
-		if(var_cancel_heuristic){
-			//If we follow the cancellation heuristics, we will firstly set the default one to be 0.0
-			res->inf_coeff[0] = 0.0;
-			res->sup_coeff[0] = 0.0;
-			return res;
-		}
 		double area1 = 0.5*ub*width;
 		double area2 = 0.5*lb*width;
 		if(use_default_heuristics){
@@ -61,7 +55,7 @@ expr_t * create_relu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, b
 	return res;
 }
 
-void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristics, bool is_blk_segmentation, int blk_size, bool is_residual, bool var_cancel_heuristic){
+void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristics, bool is_blk_segmentation, int blk_size, bool is_residual, bool is_refinement){
 	assert(num_predecessors==1);
 	fppoly_t *fp = fppoly_of_abstract0(element);
 	size_t numlayers = fp->numlayers;
@@ -93,8 +87,8 @@ void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t 
 	for(i=0; i < num_neurons; i++){
 		out_neurons[i]->lb = -fmax(0.0, -in_neurons[i]->lb);
 		out_neurons[i]->ub = fmax(0,in_neurons[i]->ub);
-		out_neurons[i]->lexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, use_default_heuristics, true, var_cancel_heuristic);
-		out_neurons[i]->uexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, use_default_heuristics, false, var_cancel_heuristic);
+		out_neurons[i]->lexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, use_default_heuristics, true, is_refinement);
+		out_neurons[i]->uexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, use_default_heuristics, false, is_refinement);
 	}
 
 }

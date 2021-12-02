@@ -206,7 +206,7 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array,
 
 
 
-def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
     handle the first FFN ReLU layer
     
@@ -239,7 +239,7 @@ def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, 
         handle_fully_connected_layer_c = fppoly_api.handle_fully_connected_layer
         handle_fully_connected_layer_c.restype = None
         handle_fully_connected_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double),  c_size_t, c_size_t, POINTER(c_size_t), c_size_t, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
-        handle_fully_connected_layer_c(man,element,weights, bias,  size, num_pixels, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_fully_connected_layer_c(man,element,weights, bias,  size, num_pixels, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
         #print("end fcl")
     except Exception as inst:
         print('Problem with loading/calling "handle_fully_connected_layer" from "libfppoly.so"')
@@ -248,7 +248,7 @@ def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, 
     return
 
 
-def handle_fully_connected_layer_no_alloc(man, element,weights, bias,  size, num_pixels, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+def handle_fully_connected_layer_no_alloc(man, element,weights, bias,  size, num_pixels, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
         handle the first FFN ReLU layer
         
@@ -281,7 +281,7 @@ def handle_fully_connected_layer_no_alloc(man, element,weights, bias,  size, num
         handle_fully_connected_layer_no_alloc_c = fppoly_api.handle_fully_connected_layer_no_alloc
         handle_fully_connected_layer_no_alloc_c.restype = None
         handle_fully_connected_layer_no_alloc_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, _doublepp, ndpointer(ctypes.c_double),  c_size_t, c_size_t, POINTER(c_size_t), c_size_t, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
-        handle_fully_connected_layer_no_alloc_c(man,element,weights, bias,  size, num_pixels, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_fully_connected_layer_no_alloc_c(man,element,weights, bias,  size, num_pixels, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
     except Exception as inst:
         print('Problem with loading/calling "handle_fully_connected_layer_no_alloc" from "libfppoly.so"')
         print(inst)
@@ -289,7 +289,7 @@ def handle_fully_connected_layer_no_alloc(man, element,weights, bias,  size, num
     return
 
 
-def handle_sub_layer(man, element, cst, is_minuend, size, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+def handle_sub_layer(man, element, cst, is_minuend, size, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
     handle the first FFN log layer
     
@@ -317,14 +317,14 @@ def handle_sub_layer(man, element, cst, is_minuend, size, predecessors, num_pred
         handle_sub_layer_c = fppoly_api.handle_sub_layer
         handle_sub_layer_c.restype = None
         handle_sub_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double),  c_bool, c_size_t, POINTER(c_size_t), c_size_t, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
-        handle_sub_layer_c(man, element, cst, is_minuend, size, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_sub_layer_c(man, element, cst, is_minuend, size, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
     except Exception as inst:
         print('Problem with loading/calling "handle_sub_layer" from "libfppoly.so"')
         print(inst)	
     
     return
 
-def handle_mul_layer(man, element, cst,  size, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+def handle_mul_layer(man, element, cst,  size, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
     handle the first FFN log layer
     
@@ -350,7 +350,7 @@ def handle_mul_layer(man, element, cst,  size, predecessors, num_predecessors, l
         handle_mul_layer_c = fppoly_api.handle_mul_layer
         handle_mul_layer_c.restype = None
         handle_mul_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double),  c_size_t, POINTER(c_size_t), c_size_t, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
-        handle_mul_layer_c(man, element, cst, size, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_mul_layer_c(man, element, cst, size, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
     except Exception as inst:
         print('Problem with loading/calling "handle_mul_layer" from "libfppoly.so"')
         print(inst)	
@@ -358,7 +358,7 @@ def handle_mul_layer(man, element, cst,  size, predecessors, num_predecessors, l
     return
 
 
-def handle_relu_layer(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristics, is_blk_segmentation, blk_size, is_residual, var_cancel_heuristic):
+def handle_relu_layer(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristics, is_blk_segmentation, blk_size, is_residual, is_refinement):
     """
     handle ReLU layer
     
@@ -387,13 +387,13 @@ def handle_relu_layer(man, element, num_neurons, predecessors, num_predecessors,
         handle_relu_layer_c = fppoly_api.handle_relu_layer
         handle_relu_layer_c.restype = None
         handle_relu_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t, c_bool, c_bool, c_int, c_bool, c_bool]
-        handle_relu_layer_c(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristics, is_blk_segmentation, blk_size, is_residual, var_cancel_heuristic)
+        handle_relu_layer_c(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristics, is_blk_segmentation, blk_size, is_residual, is_refinement)
         #print("leave c calling")
     except Exception as inst:
         print('Problem with loading/calling "handle_relu_layer" from "libfppoly.so"')
         print(inst)
 
-def is_greater(man, element, y, x, use_area_heuristic,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+def is_greater(man, element, y, x, use_area_heuristic,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
      Check if y is strictly greater than x in the abstract element 
     
@@ -419,13 +419,13 @@ def is_greater(man, element, y, x, use_area_heuristic,layer_by_layer, is_residua
         is_greater_c = fppoly_api.is_greater
         is_greater_c.restype = c_bool
         is_greater_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
-        res = is_greater_c(man,element,y, x,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        res = is_greater_c(man,element,y, x,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
     except Exception as inst:
         print('Problem with loading/calling "is_greater" from "libfppoly.so"')
         print(inst)
     return res
 
-def label_deviation_lb(man, element, y, x, use_area_heuristic,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+def label_deviation_lb(man, element, y, x, use_area_heuristic,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
      To return the lower bound of auxilinary node y-x
     
@@ -451,7 +451,7 @@ def label_deviation_lb(man, element, y, x, use_area_heuristic,layer_by_layer, is
         label_deviation_lb_c = fppoly_api.label_deviation_lb
         label_deviation_lb_c.restype = c_double
         label_deviation_lb_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
-        res = label_deviation_lb_c(man,element,y, x,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        res = label_deviation_lb_c(man,element,y, x,layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
     except Exception as inst:
         print('Problem with loading/calling "label_deviation_lb" from "libfppoly.so"')
         print(inst)
@@ -489,7 +489,7 @@ def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_
     return res
 
 
-def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
     Convolutional Matrix multiplication in the first layer
     
@@ -528,14 +528,14 @@ def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input
         handle_convolutional_layer_c = fppoly_api.handle_convolutional_layer
         handle_convolutional_layer_c.restype = None
         handle_convolutional_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double), ndpointer(ctypes.c_double), ndpointer(ctypes.c_size_t), POINTER(c_size_t), c_size_t, POINTER(c_size_t), POINTER(c_size_t),c_size_t, c_size_t, c_bool, POINTER(c_size_t), c_size_t, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
-        handle_convolutional_layer_c(man,element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_convolutional_layer_c(man,element, filter_weights, filter_bias, input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
     except Exception as inst:
         print('Problem with loading/calling "handle_convolutional_layer" from "libfppoly.so"')
         print(inst)
     return
 
 
-def handle_batchnormalization_layer(man, element, weight_para, bias_para, output_size, input_size, parameter_length, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+def handle_batchnormalization_layer(man, element, weight_para, bias_para, output_size, input_size, parameter_length, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
     Batchnormalization layer
 
@@ -568,7 +568,7 @@ def handle_batchnormalization_layer(man, element, weight_para, bias_para, output
         handle_batchnormalization_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ndpointer(ctypes.c_double),
                                                  ndpointer(ctypes.c_double), POINTER(c_size_t),
                                                  ndpointer(ctypes.c_size_t), c_size_t, POINTER(c_size_t), c_size_t, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
-        handle_batchnormalization_layer_c(man, element, weight_para, bias_para, output_size, input_size, parameter_length, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_batchnormalization_layer_c(man, element, weight_para, bias_para, output_size, input_size, parameter_length, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
     except Exception as inst:
         print('Problem with loading/calling "handle_batchnormalization_layer" from "libfppoly.so"')
         print(inst)
@@ -620,7 +620,7 @@ def handle_pool_layer(man, element, pool_size, input_size, strides, pad_top, pad
         print(inst)
     return res
 
-def handle_residual_layer(man, element, num_neurons, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic):
+def handle_residual_layer(man, element, num_neurons, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
     handle the Residual layer
     
@@ -646,7 +646,7 @@ def handle_residual_layer(man, element, num_neurons, predecessors, num_predecess
         handle_residual_layer_c = fppoly_api.handle_residual_layer
         handle_residual_layer_c.restype = None
         handle_residual_layer_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t, POINTER(c_size_t), c_size_t, c_bool, c_bool, c_bool, c_int, c_bool, c_int, c_bool, c_bool]
-        handle_residual_layer_c(man, element, num_neurons, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, var_cancel_heuristic)
+        handle_residual_layer_c(man, element, num_neurons, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement)
     except Exception as inst:
         print('Problem with loading/calling "handle_residual_layer" from "libfppoly.so"')
         print(inst)

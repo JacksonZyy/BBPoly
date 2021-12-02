@@ -315,6 +315,7 @@ candi_count = 0
 overall_time = 0.0
 
 for i, test in enumerate(tests):
+    # if (i == 8):
     print("analysis for image ", i)
     image= np.float64(test[1:len(test)])/np.float64(255)
     actual_label= int(test[0])

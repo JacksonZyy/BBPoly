@@ -642,7 +642,7 @@ double get_ub_using_prev_layer(elina_manager_t *man, fppoly_t *fp, expr_t **expr
 
 //end of my new functions
 
-double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t **expr, size_t layerno, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool var_cancel_heuristic){
+double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t **expr, size_t layerno, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool is_refinement){
 	size_t i, count1, count2, counter, thre_count;
 	int k, cur_blk, pre_blk;
 	expr_t * lexpr = copy_expr(*expr);
@@ -821,7 +821,7 @@ double get_lb_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t *
 	return res;	
 }   
 
-double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t **expr, size_t layerno, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool var_cancel_heuristic){
+double get_ub_using_previous_layers(elina_manager_t *man, fppoly_t *fp, expr_t **expr, size_t layerno, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool is_refinement){
 	size_t i, count, count2, counter, thre_count;
 	int k, cur_blk, pre_blk;
 	expr_t * uexpr = copy_expr(*expr);

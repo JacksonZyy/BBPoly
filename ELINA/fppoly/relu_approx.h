@@ -30,9 +30,9 @@ extern "C" {
 #include "backsubstitute.h"
 #include <assert.h>
 
-expr_t * create_relu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, bool use_default_heuristics, bool is_lower, bool var_cancel_heuristic);
+expr_t * create_relu_expr(neuron_t *out_neuron, neuron_t *in_neuron, size_t i, bool use_default_heuristics, bool is_lower, bool is_refinement);
 
-void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristics, bool is_blk_segmentation, int blk_size, bool is_residual, bool var_cancel_heuristic);
+void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t num_neurons, size_t *predecessors, size_t num_predecessors, bool use_default_heuristics, bool is_blk_segmentation, int blk_size, bool is_residual, bool is_refinement);
 
 #ifdef __cplusplus
  }
