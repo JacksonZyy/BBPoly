@@ -89,6 +89,9 @@ void handle_relu_layer(elina_manager_t *man, elina_abstract0_t* element, size_t 
 		out_neurons[i]->ub = fmax(0,in_neurons[i]->ub);
 		out_neurons[i]->lexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, use_default_heuristics, true, is_refinement);
 		out_neurons[i]->uexpr = create_relu_expr(out_neurons[i], in_neurons[i], i, use_default_heuristics, false, is_refinement);
+		// printf("%.4f, %.4f\n",-out_neurons[i]->lb, out_neurons[i]->ub);
+		// expr_print(out_neurons[i]->lexpr);
+		// expr_print(out_neurons[i]->uexpr);
 	}
 
 }

@@ -631,6 +631,7 @@ void update_state_layer_by_layer_parallel_until_certain_layer(elina_manager_t *m
 	size_t num_out_neurons = fp->layers[layerno]->dims;
 	size_t i;
 	int k;
+	// printf("you do have the block execution right %d?\n", is_blk_segmentation);
 	// The back-substitution stops at certain layer, which is block_start_layer
 	if (fp->numlayers == layerno)
 	{

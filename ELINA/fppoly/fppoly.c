@@ -868,12 +868,15 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 					// Update the corresponding input lower and upper bound for next deeppoly execution
 					double lp_solving_error = pow(10.0, -6.0) + ulp;
 					if(start_layer_index >= 0){
+						// printf("The start layer neuron %zu originally has interval [%.4f, %.4f]\n", i, -fp->layers[start_layer_index]->neurons[i]->lb, fp->layers[start_layer_index]->neurons[i]->ub);
 						fp->layers[start_layer_index]->neurons[i]->lb = fmin(-(solved_lb - lp_solving_error),fp->layers[start_layer_index]->neurons[i]->lb);
 						fp->layers[start_layer_index]->neurons[i]->ub = fmin(solved_ub + lp_solving_error,fp->layers[start_layer_index]->neurons[i]->ub);
+						// printf("The start layer neuron %zu was updates to [%.4f, %.4f]\n", i, -fp->layers[start_layer_index]->neurons[i]->lb, fp->layers[start_layer_index]->neurons[i]->ub);
 					}
 					else{
 						fp->input_inf[i] = -(solved_lb - lp_solving_error);
 						fp->input_sup[i] = solved_ub + lp_solving_error;
+						// printf("The resolved input neuron %zu has interval [%.4f, %.4f]\n", i, -fp->input_inf[i], fp->input_sup[i]);
 					}
 					// revert obj coeff back to 0
 					error = GRBsetdblattrelement(model, "Obj", i, 0.0);
@@ -940,9 +943,10 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 		else{
 			// handle refinement through other blocks, where the encoding comes from block summaries
 			int start_layer_index = fp->layers[k]->start_idx_in_same_blk;
-			printf("the start_layer_index of rest block is %d\n", start_layer_index);
+			printf("the start_layer_index of rest block is %d, the end layer is %d\n", start_layer_index, k);
 			int ind_next_blk_connection = k + 1;
 			for(count = 0; count < MAX_ITER; count++){
+				printf("Current refine iteration is %d\n", count);
 				if(count!=0)
 					run_deeppoly_in_block(man, element, start_layer_index, k);
 				GRBenv *env   = NULL;
@@ -950,7 +954,6 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 				int error = 0;	
 				error = GRBemptyenv(&env);
 				handle_gurobi_error(error, env);
-				// error = GRBsetstrparam(env, "LogFile", NULL);
 				error = GRBsetintparam(env, "OutputFlag", 0);
 				handle_gurobi_error(error, env);
 				error = GRBstartenv(env);
@@ -968,6 +971,7 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 					}
 				}
 				else{
+					// printf("should enter here, the start layer is the input layer\n");
 					end_var_start_ind = fp->num_pixels;
 					for(i=0; i < fp->num_pixels; i++){ // the start layer is the input layer
 						error = GRBaddvar(model, 0, NULL, NULL, 0.0, -fp->input_inf[i], fp->input_sup[i], GRB_CONTINUOUS, NULL);
@@ -979,6 +983,12 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 				layer_t * end_layer = fp->layers[k];
 				neuron_t ** end_neurons = end_layer->neurons;
 				assert(end_layer->dims == fp->layers[ind_next_blk_connection]->dims);
+				
+				for(j = 0; j < end_layer->dims; j++){
+					printf("The block summary for neuron %zu is:\n", j);
+					expr_print(end_neurons[j]->summary_lexpr);
+					expr_print(end_neurons[j]->summary_uexpr);
+				}
 				for(j = 0; j < end_layer->dims; j++){
 					neuron_t * end_node = end_neurons[j];
 					expr_t * summary_lexpr = end_node->summary_lexpr;
@@ -997,7 +1007,7 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 					ind[num_pre_neurons] = end_var_start_ind + j;
 					val[num_pre_neurons] = -1.0;
 					// y <= ax+b  -> ax - y >= -b
-					error = GRBaddconstr(model, num_pre_neurons+1, ind, val, GRB_EQUAL, -summary_uexpr->sup_cst , NULL);
+					error = GRBaddconstr(model, num_pre_neurons+1, ind, val, GRB_GREATER_EQUAL, -summary_uexpr->sup_cst , NULL);
 					handle_gurobi_error(error, env);
 					// For lower summary, need to encode the c- coefficient
   					double val2[num_pre_neurons+1];
@@ -1006,7 +1016,7 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 					}
 					val2[num_pre_neurons] = -1.0;
 					// y >= ax+b  -> ax - y <= -b
-					error = GRBaddconstr(model, num_pre_neurons+1, ind, val2, GRB_EQUAL, summary_lexpr->inf_cst, NULL);
+					error = GRBaddconstr(model, num_pre_neurons+1, ind, val2, GRB_LESS_EQUAL, summary_lexpr->inf_cst, NULL);
 					handle_gurobi_error(error, env);
 					// update model
 					error = GRBupdatemodel(model);
@@ -1103,12 +1113,15 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 					// Update the corresponding input lower and upper bound for next deeppoly execution
 					double lp_solving_error = pow(10.0, -6.0) + ulp;
 					if(start_layer_index >= 0){
+						// printf("The start layer neuron %zu originally has interval [%.4f, %.4f]\n", i, -fp->layers[start_layer_index]->neurons[i]->lb, fp->layers[start_layer_index]->neurons[i]->ub);
 						fp->layers[start_layer_index]->neurons[i]->lb = fmin(-(solved_lb - lp_solving_error),fp->layers[start_layer_index]->neurons[i]->lb);
 						fp->layers[start_layer_index]->neurons[i]->ub = fmin(solved_ub + lp_solving_error,fp->layers[start_layer_index]->neurons[i]->ub);
+						// printf("The start layer neuron %zu was updates to [%.4f, %.4f]\n", i, -fp->layers[start_layer_index]->neurons[i]->lb, fp->layers[start_layer_index]->neurons[i]->ub);
 					}
 					else{
 						fp->input_inf[i] = -(solved_lb - lp_solving_error);
 						fp->input_sup[i] = solved_ub + lp_solving_error;
+						// printf("The resolved input neuron %zu has interval [%.4f, %.4f]\n", i, -fp->input_inf[i], fp->input_sup[i]);
 					}
 					// revert obj coeff back to 0
 					error = GRBsetdblattrelement(model, "Obj", i, 0.0);
@@ -1155,6 +1168,16 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	for(count = 0; count < MAX_ITER; count++){
 		// run deeppoly() firstly to get all the constraints (for the relu ones in particular, since affine constraint doesn't change)
 		run_deeppoly(man, element);
+		// if(count == 1){
+		// 	for(i=0; i < fp->num_pixels; i++){
+		// 		printf("After second run of dp, input %zu has interval [%.4f, %.4f]\n", i, -fp->input_inf[i], fp->input_sup[i]);
+		// 	}
+		// 	for(i=0; i < numlayers; i++){
+		// 		for(j=0; j < fp->layers[i]->dims; j++){
+		// 			printf("After second run of dp, hidden neuron %zu has interval [%.4f, %.4f]\n", j, -fp->layers[i]->neurons[j]->lb, fp->layers[i]->neurons[j]->ub);
+		// 		}
+		// 	}
+		// }
 		// printf("Refinement iteration %d\n", count);
 		/* Create environment */
   		GRBenv *env   = NULL;
@@ -1339,6 +1362,7 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 			double lp_solving_error = pow(10.0, -6.0) + ulp;
 			fp->input_inf[i] = -(solved_lb - lp_solving_error);
 			fp->input_sup[i] = solved_ub + lp_solving_error;
+			// printf("The resolved input neuron %zu has interval [%.4f, %.4f]\n", i, -fp->input_inf[i], fp->input_sup[i]);
 			// revert obj coeff back to 0
 			error = GRBsetdblattrelement(model, "Obj", i, 0.0);
 			handle_gurobi_error(error, env);
