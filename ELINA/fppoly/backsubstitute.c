@@ -294,10 +294,10 @@ void update_state_using_previous_layers_parallel(elina_manager_t *man, fppoly_t 
 			}
 		}
 	}
-	if(is_blk_segmentation && is_refinement){
-		// only apply modular for refinement process, not for original deeppoly execution
-		is_blk_segmentation = false;
-	}
+	// if(is_blk_segmentation && is_refinement){
+	// 	// only apply modular for refinement process, not for original deeppoly execution
+	// 	is_blk_segmentation = false;
+	// }
 	size_t i;
 	int k = fp->layers[layerno]->predecessors[0] - 1;;
 	//Set the global ReLU nodes in here
@@ -485,10 +485,10 @@ void update_state_layer_by_layer_parallel(elina_manager_t *man, fppoly_t *fp, si
 		}
 	}
 	// printf("set up the block info\n");
-	if(is_blk_segmentation && is_refinement){
-		// only apply modular for refinement process, not for original deeppoly execution
-		is_blk_segmentation = false;
-	}
+	// if(is_blk_segmentation && is_refinement){
+	// 	// only apply modular for refinement process, not for original deeppoly execution
+	// 	is_blk_segmentation = false;
+	// }
 	size_t i;
 	int k;
 	if (fp->numlayers == layerno)

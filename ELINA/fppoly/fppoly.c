@@ -466,10 +466,10 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 	double lb = INFINITY;
 	int k;
 	expr_t * backsubstituted_lexpr = copy_expr(sub);
-	if(is_blk_segmentation && is_refinement){
-		// only apply modular for refinement process, not for original deeppoly execution
-		is_blk_segmentation = false;
-	}
+	// if(is_blk_segmentation && is_refinement){
+	// 	// only apply modular for refinement process, not for original deeppoly execution
+	// 	is_blk_segmentation = false;
+	// }
 	// printf("The auxilinary neuron is %zu - %zu\n", y, x);
 	if(layer_by_layer){
 		k = fp->numlayers - 1;
@@ -995,10 +995,10 @@ bool is_spurious_blk_summary(elina_manager_t* man, elina_abstract0_t* element, e
 		else{
 			// handle refinement through other blocks, where the encoding comes from block summaries
 			int start_layer_index = fp->layers[k]->start_idx_in_same_blk;
-			printf("the start_layer_index of rest block is %d, the end layer is %d\n", start_layer_index, k);
+			// printf("the start_layer_index of rest block is %d, the end layer is %d\n", start_layer_index, k);
 			int ind_next_blk_connection = k + 1;
 			for(count = 0; count < MAX_ITER; count++){
-				printf("Current refine iteration is %d\n", count);
+				// printf("Current refine iteration is %d\n", count);
 				if(count!=0)
 					run_bbpoly_in_block(man, element, start_layer_index, k);
 				GRBenv *env   = NULL;
@@ -1035,12 +1035,11 @@ bool is_spurious_blk_summary(elina_manager_t* man, elina_abstract0_t* element, e
 				layer_t * end_layer = fp->layers[k];
 				neuron_t ** end_neurons = end_layer->neurons;
 				assert(end_layer->dims == fp->layers[ind_next_blk_connection]->dims);
-				
-				for(j = 0; j < end_layer->dims; j++){
-					printf("The block summary for neuron %zu is:\n", j);
-					expr_print(end_neurons[j]->summary_lexpr);
-					expr_print(end_neurons[j]->summary_uexpr);
-				}
+				// for(j = 0; j < end_layer->dims; j++){
+				// 	printf("The block summary for neuron %zu is:\n", j);
+				// 	expr_print(end_neurons[j]->summary_lexpr);
+				// 	expr_print(end_neurons[j]->summary_uexpr);
+				// }
 				for(j = 0; j < end_layer->dims; j++){
 					neuron_t * end_node = end_neurons[j];
 					expr_t * summary_lexpr = end_node->summary_lexpr;
@@ -1178,6 +1177,51 @@ bool is_spurious_blk_summary(elina_manager_t* man, elina_abstract0_t* element, e
 					// revert obj coeff back to 0
 					error = GRBsetdblattrelement(model, "Obj", i, 0.0);
 					handle_gurobi_error(error, env);
+				}
+
+				// The end layer of the block is the input to relu layer, use LP solving to stablize it
+				int relu_refine_count = 0;
+				if(!end_layer->is_activation && start_layer_of_next_blk->is_activation){
+					neuron_t ** relu_neurons = start_layer_of_next_blk->neurons;
+					for(j=0; j < start_layer_of_next_blk->dims; j++){
+						if(relu_neurons[j]->ub!=0.0 && relu_neurons[j]->lb>=0){
+							double solved_lb, solved_ub;
+							error = GRBsetdblattrelement(model, "Obj", end_var_start_ind + j, 1.0);
+							handle_gurobi_error(error, env);
+							// ModelSense, default value 1 indicates minimization, and -1 meaning maximization
+							// lower bound solving
+							error = GRBsetintattr(model, "ModelSense", 1);
+							handle_gurobi_error(error, env);
+							error = GRBupdatemodel(model);
+							handle_gurobi_error(error, env);
+							error = GRBoptimize(model);
+							handle_gurobi_error(error, env);
+							error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &solved_lb);
+							handle_gurobi_error(error, env);
+							// update relu node lower bound
+							double lp_solving_error = pow(10.0, -6.0) + ulp;
+							end_layer->neurons[j]->lb = fmin(-(solved_lb - lp_solving_error), end_layer->neurons[j]->lb);
+							if(end_layer->neurons[j]->lb<0){
+								relu_refine_count ++;
+							}
+							// upper bound solving
+							error = GRBsetintattr(model, "ModelSense", -1);
+							handle_gurobi_error(error, env);
+							error = GRBupdatemodel(model);
+							handle_gurobi_error(error, env);
+							error = GRBoptimize(model);
+							handle_gurobi_error(error, env);
+							error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &solved_ub);
+							handle_gurobi_error(error, env);
+							// update relu node upper bound
+							end_layer->neurons[j]->ub = fmin(solved_ub + lp_solving_error, end_layer->neurons[j]->ub);
+							if(end_layer->neurons[j]->ub<=0){
+								relu_refine_count ++;
+							}
+							error = GRBsetdblattrelement(model, "Obj", end_var_start_ind + j, 0.0);
+							handle_gurobi_error(error, env);
+						}
+					}
 				}
 				/* Free model */
 				GRBfreemodel(model);
@@ -1474,7 +1518,7 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 						}
 					}
 				}
-				printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
+				// printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
 				/* Free model */
 				GRBfreemodel(model);
 				/* Free environment */
@@ -1486,10 +1530,10 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 			// handle refinement through other blocks, where the encoding comes from block summaries
 			int end_layer_index = k;
 			int start_layer_index = fp->layers[end_layer_index]->start_idx_in_same_blk;
-			printf("the start_layer_index of rest block is %d, the end layer is %d\n", start_layer_index, end_layer_index);
+			// printf("the start_layer_index of rest block is %d, the end layer is %d\n", start_layer_index, end_layer_index);
 			int ind_next_blk_connection = end_layer_index + 1;
 			for(count = 0; count < MAX_ITER; count++){
-				printf("Current refine iteration is %d\n", count);
+				// printf("Current refine iteration is %d\n", count);
 				if(count!=0)
 					run_deeppoly_in_block(man, element, start_layer_index, end_layer_index);
 				GRBenv *env   = NULL;
@@ -1707,15 +1751,15 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 					// Update the corresponding input lower and upper bound for next deeppoly execution
 					double lp_solving_error = pow(10.0, -6.0) + ulp;
 					if(start_layer_index >= 0){
-						printf("The start layer neuron %zu originally has interval [%.4f, %.4f]\n", i, -fp->layers[start_layer_index]->neurons[i]->lb, fp->layers[start_layer_index]->neurons[i]->ub);
+						// printf("The start layer neuron %zu originally has interval [%.4f, %.4f]\n", i, -fp->layers[start_layer_index]->neurons[i]->lb, fp->layers[start_layer_index]->neurons[i]->ub);
 						fp->layers[start_layer_index]->neurons[i]->lb = fmin(-(solved_lb - lp_solving_error),fp->layers[start_layer_index]->neurons[i]->lb);
 						fp->layers[start_layer_index]->neurons[i]->ub = fmin(solved_ub + lp_solving_error,fp->layers[start_layer_index]->neurons[i]->ub);
-						printf("The start layer neuron %zu was updates to [%.4f, %.4f]\n", i, -fp->layers[start_layer_index]->neurons[i]->lb, fp->layers[start_layer_index]->neurons[i]->ub);
+						// printf("The start layer neuron %zu was updates to [%.4f, %.4f]\n", i, -fp->layers[start_layer_index]->neurons[i]->lb, fp->layers[start_layer_index]->neurons[i]->ub);
 					}
 					else{
 						fp->input_inf[i] = -(solved_lb - lp_solving_error);
 						fp->input_sup[i] = solved_ub + lp_solving_error;
-						printf("The resolved input neuron %zu has interval [%.4f, %.4f]\n", i, -fp->input_inf[i], fp->input_sup[i]);
+						// printf("The resolved input neuron %zu has interval [%.4f, %.4f]\n", i, -fp->input_inf[i], fp->input_sup[i]);
 					}
 					// revert obj coeff back to 0
 					error = GRBsetdblattrelement(model, "Obj", i, 0.0);
@@ -1771,7 +1815,7 @@ bool is_spurious_modular(elina_manager_t* man, elina_abstract0_t* element, elina
 						}
 					}
 				}
-				printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
+				// printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
 				/* Free model */
 				GRBfreemodel(model);
 				/* Free environment */
@@ -2062,7 +2106,7 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 				}
 			}
 		}
-		printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
+		// printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
 		/* Free model */
   		GRBfreemodel(model);
   		/* Free environment */
@@ -2094,10 +2138,10 @@ double label_deviation_lb(elina_manager_t* man, elina_abstract0_t* element, elin
 	sub->dim[1] = x;
 	double lb = INFINITY;
 	int k;
-	if(is_blk_segmentation && is_refinement){
-		// only apply modular for refinement process, not for original deeppoly execution
-		is_blk_segmentation = false;
-	}
+	// if(is_blk_segmentation && is_refinement){
+	// 	// only apply modular for refinement process, not for original deeppoly execution
+	// 	is_blk_segmentation = false;
+	// }
 	expr_t * backsubstituted_lexpr = copy_expr(sub);
 	// printf("The auxilinary neuron is %zu - %zu\n", y, x);
 	if(layer_by_layer){
