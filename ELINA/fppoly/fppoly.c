@@ -1881,7 +1881,12 @@ bool is_spurious_whole_net_with_blksum(elina_manager_t* man, elina_abstract0_t* 
 	for(count = 0; count < MAX_ITER; count++){
 		// run bbpoly for the whole network
 		run_bbpoly_in_block(man, element, -1, numlayers - 1);
-		// printf("Refinement iteration %d\n", count);
+		printf("Refinement iteration %d\n", count);
+		// for(i=0; i < numlayers; i++){
+		// 	for(j = 0; j < fp->layers[i]->dims; j++){
+		// 		printf("lb and ub are %.4f, %.4f respectively\n", -fp->layers[i]->neurons[j]->lb, fp->layers[i]->neurons[j]->ub);
+		// 	}
+		// }
 		/* Create environment */
   		GRBenv *env   = NULL;
   		GRBmodel *model = NULL;
@@ -1903,39 +1908,46 @@ bool is_spurious_whole_net_with_blksum(elina_manager_t* man, elina_abstract0_t* 
 			// initialize the value, -1 meaning this layer will not be counted during encoding
 			layer_var_start_idx[i] = -1;
 		}
-		i = numlayers-1;
-		while(i>=0){
+		k = numlayers-1;
+		while(k>=0){
 			// Setting up flag to indicate how to add constraint for this layer
-			if(i == numlayers - 1){
-				int start_layer_index = fp->layers[numlayers - 1]->start_idx_in_same_blk;
+			if(k == numlayers - 1){
+				int start_layer_index = fp->layers[k]->start_idx_in_same_blk;
+				// printf("start_layer_index is %d\n", start_layer_index);
+				// printf("k is %d\n", k);
 				if(start_layer_index == numlayers -1){
 					// if the last block just contain one layer, merge it with the previous block
 					start_layer_index = (numlayers >= 2) ? fp->layers[numlayers - 2]->start_idx_in_same_blk : -1;
 				}
 				for(k = start_layer_index; k < numlayers; k++){
 					// indicating that for this layer, full constraints will be considered instead of block summary
-					layer_var_start_idx[i] = 2;
+					if(k>=0)
+						layer_var_start_idx[k] = 2;
 				}
-				i = (start_layer_index >= 0) ? fp->layers[start_layer_index]->predecessors[0]-1 : -2 ;
+				k = (start_layer_index >= 0) ? fp->layers[start_layer_index]->predecessors[0]-1 : -2 ;
 			}
 			else{
-				layer_var_start_idx[i] = 1; //encode with block summary
-				int start_layer_index = fp->layers[i]->start_idx_in_same_blk;
+				layer_var_start_idx[k] = 1; //encode with block summary
+				int start_layer_index = fp->layers[k]->start_idx_in_same_blk;
 				if(start_layer_index >=0){
 					layer_var_start_idx[start_layer_index] = 1;
 				}
-				i = (start_layer_index >= 0) ? fp->layers[start_layer_index]->predecessors[0]-1 : -2 ;
+				k = (start_layer_index >= 0) ? fp->layers[start_layer_index]->predecessors[0]-1 : -2 ;
 			}
 		}
-
-		// fp->input_inf[i], fp->input_sup[i], add the input layer constraints
+		// add the input layer constraints
 		for(i=0; i < fp->num_pixels; i++){
 			error = GRBaddvar(model, 0, NULL, NULL, 0.0, -fp->input_inf[i], fp->input_sup[i], GRB_CONTINUOUS, NULL);
         	handle_gurobi_error(error, env);
 		}
-		
 		// add block summaried for each block, and for the last block, still encode all the constraints
-		for(i=0; (i < numlayers) && (layer_var_start_idx[i]>=1); i++){
+		// for(i=0; i < numlayers; i++){
+		// 	printf("layer_var_start_idx for %zu is %d\n", i, layer_var_start_idx[i]);
+		// 	printf("condition checking is %d\n", i<numlayers && layer_var_start_idx[i]>0);
+		// 	printf("layer type: is_start_layer %d, is_end_layer %d\n", fp->layers[i]->is_start_layer_of_blk, fp->layers[i]->is_end_layer_of_blk);
+		// }
+		// printf("numlayers is %zu\n", numlayers);
+		for(i = 0 ; i < numlayers; i++){
 			layer_t * cur_layer = fp->layers[i];
 			neuron_t ** cur_neurons = cur_layer->neurons;
 			size_t num_cur_neurons = cur_layer->dims;
@@ -1960,11 +1972,12 @@ bool is_spurious_whole_net_with_blksum(elina_manager_t* man, elina_abstract0_t* 
 					// For upper summary, need to encode the c+ coefficient
 					int ind[num_pre_neurons+1];
   					double val[num_pre_neurons+1];
+					int defined_over_idx = (start_layer_index>=0) ? layer_var_start_idx[start_layer_index] : 0;
 					for(n=0; n < num_pre_neurons; n++){
-						ind[n] = n;
+						ind[n] = defined_over_idx + n;
 						val[n] = summary_uexpr->sup_coeff[n];
 					}
-					ind[num_pre_neurons] = layer_var_start_idx[start_layer_index] + j;
+					ind[num_pre_neurons] = layer_var_start_idx[i] + j;
 					val[num_pre_neurons] = -1.0;
 					// y <= ax+b  -> ax - y >= -b
 					error = GRBaddconstr(model, num_pre_neurons+1, ind, val, GRB_GREATER_EQUAL, -summary_uexpr->sup_cst , NULL);
@@ -1985,6 +1998,7 @@ bool is_spurious_whole_net_with_blksum(elina_manager_t* man, elina_abstract0_t* 
 			}
 			else if((layer_var_start_idx[i]==1) && (cur_layer->is_start_layer_of_blk)){
 				assert(cur_layer->is_activation);
+				layer_var_start_idx[i] = layer_var_start_idx[i-1] + fp->layers[i-1]->dims;
 				//current layer is ReLU layer, we add the constraints according to RELU behavior
 				for(j=0; j < num_cur_neurons; j++){
 					// add constraints for each ReLU node
@@ -2042,6 +2056,7 @@ bool is_spurious_whole_net_with_blksum(elina_manager_t* man, elina_abstract0_t* 
 			}
 			else if(layer_var_start_idx[i]==2){
 				// for layer like this, we directly encode the symbolic constraints
+				layer_var_start_idx[i] = layer_var_start_idx[i-1] + fp->layers[i-1]->dims;
 				if(cur_layer->is_activation){
 					for(j=0; j < num_cur_neurons; j++){
 						// add constraints for each ReLU node
@@ -2188,12 +2203,11 @@ bool is_spurious_whole_net_with_blksum(elina_manager_t* man, elina_abstract0_t* 
 			error = GRBsetdblattrelement(model, "Obj", i, 0.0);
 			handle_gurobi_error(error, env);
 		}
-
 		// solve for relu interval of unstable relu nodes
 		int relu_refine_count = 0;
-		for(i=0; (i < numlayers) && (layer_var_start_idx[i]>=1); i++){
+		for(i=0; i < numlayers; i++){
 			layer_t * cur_layer = fp->layers[i];
-			if(!cur_layer->is_activation && (i < numlayers-1) && fp->layers[i+1]->is_activation){
+			if((layer_var_start_idx[i]>=1) && !cur_layer->is_activation && (i < numlayers-1) && fp->layers[i+1]->is_activation){
 				layer_t * next_layer = fp->layers[i+1];
 				assert(cur_layer->dims == next_layer->dims);
 				neuron_t ** relu_neurons = next_layer->neurons;
@@ -2238,7 +2252,8 @@ bool is_spurious_whole_net_with_blksum(elina_manager_t* man, elina_abstract0_t* 
 				}
 			}
 		}
-		// printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
+		printf("b\n");
+		printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
 		/* Free model */
   		GRBfreemodel(model);
   		/* Free environment */
@@ -2250,11 +2265,10 @@ bool is_spurious_whole_net_with_blksum(elina_manager_t* man, elina_abstract0_t* 
 	return false;
 }
 
-
 bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, bool layer_by_layer, bool is_blk_segmentation, int blk_size, bool is_sum_def_over_input, int * spurious_list, int spurious_count, int MAX_ITER){
 	// firstly consider the default case, where like in SMU paper, to encode all the constraints within the network
 	if(is_blk_segmentation)
-		return is_spurious_modular(man, element, ground_truth_label, poten_cex, spurious_list, spurious_count, MAX_ITER);
+		return is_spurious_whole_net_with_blksum(man, element, ground_truth_label, poten_cex, spurious_list, spurious_count, MAX_ITER);
 	int count, k;
 	size_t i, j, n;
 	fppoly_t *fp = fppoly_of_abstract0(element);

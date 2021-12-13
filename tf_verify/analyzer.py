@@ -230,7 +230,7 @@ class Analyzer:
         assert self.output_constraints is None, "The output constraints are supposed to be None"
         assert self.prop == -1, "The prop are supposed to be deactivated"
         element, nlb, nub = self.get_abstract0()
-        # print(nlb, nub)
+        print(nlb, nub)
         output_size = 0
         output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
         # print(output_size)
