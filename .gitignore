@@ -24,3 +24,5 @@ tf_verify/nohup0016.out
 tf_verify/fullrefine001_out.txt
 tf_verify/nohup0025.out
 tf_verify/smu0012_out.txt
+tf_verify/refine_testing_reverse.py
+tf_verify/smu0015_out.txt
