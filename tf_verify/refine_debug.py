@@ -315,7 +315,7 @@ one_dim_UB = specUB.flatten()
 
 # execution with corresponding parameters
 start = time.time() 
-eran_result = eran.analyze_with_ground_truth_label(one_dim_LB, one_dim_UB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, is_refinement=config.is_refinement, REFINE_MAX_ITER=config.refine_max_iter, label=0)
+eran_result = eran.analyze_with_ground_truth_label(one_dim_LB, one_dim_UB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, is_refinement=config.is_refinement, REFINE_MAX_ITER=config.refine_max_iter, label=1)
 end = time.time()
 dominant_class = eran_result[0]
 
