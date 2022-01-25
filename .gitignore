@@ -27,3 +27,6 @@ tf_verify/smu0015_out.txt
 tf_verify/3relu_out.txt
 tf_verify/refine_testing_cp.py
 tf_verify/3relu_out2.txt
+tf_verify/multi_sce.lp
+tf_verify/multi_sce.mps
+gurobi950

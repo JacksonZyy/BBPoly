@@ -39,9 +39,9 @@ LIBS = -L../partitions_api -lpartitions -L$(APRON_PREFIX)/lib -lapron  -L../elin
 INCLUDES = -I../apron_interface -I$(APRON_PREFIX)/include -I../elina_linearize -I../elina_zonotope -I../partitions_api  -I/usr/local/include/cddlib $(MPFR_INCLUDE_FLAG) $(GMP_INCLUDE_FLAG)
 endif
 
-INCLUDES += -I ../../gurobi900/linux64/include/
+INCLUDES += -I ../../gurobi950/linux64/include/
 DFLAGS += -m64
-LIBS += -lgurobi90 -L ../../gurobi900/linux64/lib
+LIBS += -lgurobi90 -L ../../gurobi950/linux64/lib
 
 INSTALL = install
 INSTALLd = install -d
