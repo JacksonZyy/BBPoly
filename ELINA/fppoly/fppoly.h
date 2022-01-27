@@ -164,7 +164,6 @@ typedef struct nn_thread_t{
 	bool is_refinement;
 }nn_thread_t;
 
-
 elina_manager_t* fppoly_manager_alloc(void);
 
 elina_abstract0_t* fppoly_from_network_input(elina_manager_t *man, size_t intdim, size_t realdim, double *inf_array, double *sup_array);
@@ -198,6 +197,8 @@ void fppoly_free(elina_manager_t *man, fppoly_t *fp);
 bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool is_refinement);
 
 bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, bool layer_by_layer, bool is_blk_segmentation, int blk_size, bool is_sum_def_over_input, int * spurious_list, int spurious_count, int MAX_ITER);
+
+bool network_with_subgraph_encoding(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, int * adversarial_list, int adv_count);
 
 double label_deviation_lb(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool is_refinement);
 

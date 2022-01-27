@@ -488,6 +488,36 @@ def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_
         print(inst)
     return res
 
+def network_with_subgraph_encoding(man, element, ground_truth_label, adversarial_list, adv_count):
+    """
+     To check and try to prune each adversarial labels with subgraph encoding for the network
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive : c_bool
+        Boolean flag.
+    ground_truth_label : ElinaDim
+        The dimension for ground truth label
+    adversarial_list: int list
+        Record the potential adversarial label list
+    Returns
+    -------
+    res = boolean
+
+    """
+    res= None
+    try:
+        network_with_subgraph_encoding_c = fppoly_api.network_with_subgraph_encoding
+        network_with_subgraph_encoding_c.restype = c_bool
+        adversarial_list_np = np.ascontiguousarray(adversarial_list, dtype=np.uintc)
+        network_with_subgraph_encoding_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int]
+        res = network_with_subgraph_encoding_c(man, element, ground_truth_label, adversarial_list_np, adv_count)
+    except Exception as inst:
+        print('Problem with loading/calling "network_with_subgraph_encoding" from "libfppoly.so"')
+        print(inst)
+    return res
 
 def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input_size, filter_size, num_filters, strides, output_size, pad_top, pad_left, has_bias, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
