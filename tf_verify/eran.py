@@ -150,7 +150,8 @@ class ERAN:
         nn.specUB = specUB
         execute_list, output_info = self.optimizer.get_deeppoly(nn, specLB, specUB, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size)
         analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement, REFINE_MAX_ITER)
-        dominant_class, nlb, nub, failed_labels, x = analyzer.analyze_groud_truth_label(label)
+        # dominant_class, nlb, nub, failed_labels, x = analyzer.analyze_groud_truth_label(label)
+        dominant_class, nlb, nub, failed_labels, x = analyzer.analyze_with_subgraph_encoding(label)
         if testing:
             return dominant_class, nn, nlb, nub, output_info
         else:

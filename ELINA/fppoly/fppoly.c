@@ -746,9 +746,8 @@ bool network_with_subgraph_encoding(elina_manager_t* man, elina_abstract0_t* ele
 			}
 		}
 	}
-
 	// generate sub-graph and call 
-	for(i=0; i < numlayers; i++){
+	for(i=0; i <= numlayers; i++){
 		layer_t * cur_layer = fp->layers[i];
 		if(!cur_layer->is_activation && (i < numlayers-3) && fp->layers[i+1]->is_activation){
 			layer_t * next_layer = fp->layers[i+1];
@@ -758,14 +757,66 @@ bool network_with_subgraph_encoding(elina_manager_t* man, elina_abstract0_t* ele
 			for(j=0; j < cur_layer->dims; j++){
 				if(relu_neurons[j]->ub!=0.0 && relu_neurons[j]->lb>=0){
 					layer_t * out_layer = fp->layers[i+3];
+					// double min, max;
+					// for(b=0; b < next_layer->dims; b++){
+					// 	if(b != j){
+					// 		error = GRBsetdblattrelement(model, "Obj", layer_var_start_idx[i+1]+b, 1.0); handle_gurobi_error(error, env);
+					// 		error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+					// 	}
+					// }
+					// error = GRBsetintattr(model, "ModelSense", 1); handle_gurobi_error(error, env);
+					// error = GRBoptimize(model); handle_gurobi_error(error, env);
+					// error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &min); handle_gurobi_error(error, env);
+					// error = GRBsetintattr(model, "ModelSense", -1); handle_gurobi_error(error, env);
+					// error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+					// error = GRBoptimize(model); handle_gurobi_error(error, env);
+					// error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &max); handle_gurobi_error(error, env);
+					// for(b=0; b < next_layer->dims; b++){
+					// 	if(b != j){
+					// 		error = GRBsetdblattrelement(model, "Obj", layer_var_start_idx[i+1]+b, 0.0); handle_gurobi_error(error, env);
+					// 		error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+					// 	}
+					// }
 					for(n=0; (out_layer->is_activation) && (n < out_layer->dims); n++){
 						if(out_layer->neurons[n]->ub!=0.0 && out_layer->neurons[n]->lb>=0){
+							// double values[next_layer->dims]; int indexes[next_layer->dims];
+							// c = 0;
+							// for(b=0; b < next_layer->dims; b++){
+							// 	if(b != j){
+							// 		values[c] = -fp->layers[i+2]->neurons[n]->uexpr->sup_coeff[b];
+							// 		indexes[c] = layer_var_start_idx[i+1]+b;	
+							// 		c++;	
+							// 	}
+							// }
+							// expr_print(fp->layers[i+2]->neurons[n]->uexpr);
+							// printf("index starter for 0 is %d, for 1 is %d\n", layer_var_start_idx[i], layer_var_start_idx[i+1]);
+							// printf("The connection weight is %.4f\n", fp->layers[i+2]->neurons[n]->uexpr->sup_coeff[j]);
+							// values[next_layer->dims - 1] = 1; indexes[next_layer->dims - 1] = layer_var_start_idx[i+3]+n;
+							// for(b=0; b < next_layer->dims; b++){
+							// 	printf("The constriant contains var %d with coeff %.4f\n", indexes[b], values[b]);
+							// }
+							// error = GRBaddconstr(model, next_layer->dims, indexes, values, GRB_GREATER_EQUAL, fp->layers[i+2]->neurons[n]->uexpr->sup_cst, NULL);  handle_gurobi_error(error, env);
+							// const_num ++;
+							// error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+							// error = GRBoptimize(model); handle_gurobi_error(error, env);
+							// error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus); handle_gurobi_error(error, env);
+							// printf("The solver status after adding this constraint is %d\n",optimstatus);
+							// if(optimstatus == GRB_INFEASIBLE){
+							// 	GRBfreemodel(model);
+							// 	GRBfreeenv(env);
+							// 	return false;
+							// }
 							double weight = fp->layers[i+2]->neurons[n]->lexpr->sup_coeff[j];
 							double min = (weight * relu_neurons[j]->lb <= -weight *relu_neurons[j]->ub) ? weight * relu_neurons[j]->lb : -weight *relu_neurons[j]->ub;
 							double max = (weight * relu_neurons[j]->lb >= -weight *relu_neurons[j]->ub) ? weight * relu_neurons[j]->lb : -weight *relu_neurons[j]->ub;
+							// printf("The interval for var inp is [%.4f, %.4f]\n", -input_neurons[j]->lb, input_neurons[j]->ub);
+							// printf("The interval for var oup is [%.4f, %.4f]\n", -out_layer->neurons[n]->lb, out_layer->neurons[n]->ub);
+							// printf("The interval for var aux is [%.4f, %.4f]\n", -fp->layers[i+2]->neurons[n]->lb + min, fp->layers[i+2]->neurons[n]->ub + max);
+							// printf("The weight in the connection edge is %.4f\n", weight);
 							dd_MatrixPtr G_polyu = convex_computation_for_subgraph(-input_neurons[j]->lb, input_neurons[j]->ub, -out_layer->neurons[n]->lb, out_layer->neurons[n]->ub, -fp->layers[i+2]->neurons[n]->lb + min, fp->layers[i+2]->neurons[n]->ub + max, weight);
 							// Iterate over all constraints in A and add to LP solver, remember to increment counter const_num
 							// Need to replace aux node as the linear expression
+							printf("Determine a specific subgraph for layer %zu, node %zu and layer %zu, node %zu !!!!!!!!!!!!!!\n", i, j, i+3, n);
 							for (a=0; a < G_polyu->rowsize; a++){
 								double bias, coeff1, coeff2, coeff3;
 								revert_to_Real(G_polyu->matrix[a][0], &bias, &ix); revert_to_Real(G_polyu->matrix[a][1], &coeff1, &ix);
@@ -781,9 +832,23 @@ bool network_with_subgraph_encoding(elina_manager_t* man, elina_abstract0_t* ele
 										c++;	
 									}
 								}
-								error = GRBaddconstr(model, next_layer->dims +1, indexes, values, GRB_GREATER_EQUAL, -bias, NULL);  handle_gurobi_error(error, env);
+								// printf("The constriant is defined as followed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+								// for(b=0; b < next_layer->dims+1; b++){
+								// 	printf("The constriant contains var %d with coeff %.4f\n", indexes[b], values[b]);
+								// }
+								// printf("The constriant contains bias %.4f\n", -bias);
+								// printf("Adding constraint %d for this subgraph \n", a);
+								error = GRBaddconstr(model, next_layer->dims +1, indexes, values, GRB_GREATER_EQUAL, -bias - coeff2 *fp->layers[i+2]->neurons[n]->lexpr->sup_cst, NULL);  handle_gurobi_error(error, env);
 								const_num ++;
 								error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+								error = GRBoptimize(model); handle_gurobi_error(error, env);
+								error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus); handle_gurobi_error(error, env);
+								// printf("The solver status after adding this constraint is %d\n",optimstatus);
+								if(optimstatus == GRB_INFEASIBLE){
+									GRBfreemodel(model);
+									GRBfreeenv(env);
+									return false;
+								}
 							}
 							dd_FreeMatrix(G_polyu);
 						}
@@ -791,9 +856,14 @@ bool network_with_subgraph_encoding(elina_manager_t* man, elina_abstract0_t* ele
 				}
 			}
 			// Testing 2 relu layers only
-			break; 
+			// break; 
 		}
 	}
+
+	error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+	error = GRBoptimize(model); handle_gurobi_error(error, env);
+	error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus); handle_gurobi_error(error, env);
+	printf("The solver status before adding cex is %d\n",optimstatus);
 
 	// add constraints for previously spurious labels
 	for(k=0; k < adv_count; k++){
@@ -808,6 +878,7 @@ bool network_with_subgraph_encoding(elina_manager_t* man, elina_abstract0_t* ele
 		error = GRBoptimize(model); handle_gurobi_error(error, env);
 		/* Capture solution information */
 		error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus); handle_gurobi_error(error, env);
+		printf("The solver status for adver label %d is %d\n", adv_label, optimstatus);
 		if(optimstatus != GRB_INFEASIBLE){
 			GRBfreemodel(model);
 			GRBfreeenv(env);

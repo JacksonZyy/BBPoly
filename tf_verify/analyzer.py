@@ -379,7 +379,6 @@ class Analyzer:
         # print(output_size)
         dominant_class = -1
         label_failed = []
-        potential_adv_labels = {} 
         adversarial_list = []
         # potential_adv_labels is the dictionary where key is the adv label i and value is the deviation ground_truth_label-i
         x = None
@@ -402,7 +401,6 @@ class Analyzer:
                 # testing if label is always greater than j
                 flag = False
                 adversarial_list.append(j)
-                potential_adv_labels[j] = lb
                 potential_adv_count = potential_adv_count + 1
         if flag:
             # if we successfully mark the groud truth label as dominant label
@@ -415,4 +413,6 @@ class Analyzer:
         #print("enter abstract_free() in python")
         elina_abstract0_free(self.man, element)
         #print("End analyze() in python")
+        print(nlb[-1])
+        # print(nub)
         return dominant_class, nlb, nub, label_failed, x
