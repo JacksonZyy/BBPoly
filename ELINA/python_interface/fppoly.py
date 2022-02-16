@@ -488,6 +488,37 @@ def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_
         print(inst)
     return res
 
+def multi_cex_is_spurious(man, element, ground_truth_label, poten_cex1, poten_cex2, spurious_list, spurious_count, MAX_ITER):
+    """
+     To check if the two adversarial labels are spurious or not at the same time
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive : c_bool
+        Boolean flag.
+    y : ElinaDim
+        The dimension y in the constraint y-x>0.
+    x: ElinaDim
+	The dimension x in the constraint y-x>0.
+    Returns
+    -------
+    res = boolean
+
+    """
+    res= None
+    try:
+        multi_cex_is_spurious_c = fppoly_api.multi_cex_is_spurious
+        multi_cex_is_spurious_c.restype = c_bool
+        spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
+        multi_cex_is_spurious_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, ElinaDim, ndpointer(c_uint), c_int, c_int]
+        res = multi_cex_is_spurious_c(man, element, ground_truth_label, poten_cex1, poten_cex2, spurious_list_np, spurious_count, MAX_ITER)
+    except Exception as inst:
+        print('Problem with loading/calling "multi_cex_is_spurious" from "libfppoly.so"')
+        print(inst)
+    return res
+
 def network_with_subgraph_encoding(man, element, ground_truth_label, adversarial_list, adv_count):
     """
      To check and try to prune each adversarial labels with subgraph encoding for the network

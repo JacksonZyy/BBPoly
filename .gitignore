@@ -23,10 +23,9 @@ tf_verify/nohup.out
 tf_verify/fullrefine001_out.txt
 tf_verify/smu0012_out.txt
 tf_verify/refine_testing_reverse.py
-tf_verify/smu0015_out.txt
-tf_verify/3relu_out.txt
+tf_verify/smu001_out.txt
 tf_verify/refine_testing_cp.py
-tf_verify/3relu_out2.txt
 tf_verify/multi_sce.lp
 tf_verify/multi_sce.mps
 gurobi950
+tf_verify/draft.py

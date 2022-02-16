@@ -92,6 +92,7 @@ typedef struct expr_t{
 typedef struct neuron_t{
 	double lb;
 	double ub;
+	double conVal;
 	expr_t * lexpr;
 	expr_t * uexpr;
 	//The member to record the block summarization, default is NULL
@@ -130,6 +131,7 @@ typedef struct fppoly_t{
 	size_t numlayers;
 	double * input_inf;
 	double * input_sup;
+	double * input_val;
 	// These domains never changes over the refinement procedure
 	double * original_input_inf;
 	double * original_input_sup;
@@ -200,12 +202,18 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 
 bool network_with_subgraph_encoding(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, int * adversarial_list, int adv_count);
 
+bool multi_cex_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex1, elina_dim_t poten_cex2, int * spurious_list, int spurious_count, int MAX_ITER);
+
 double label_deviation_lb(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool is_refinement);
 
 void handle_convolutional_layer(elina_manager_t* man, elina_abstract0_t* element, double *filter_weights, double * filter_bias,  
 				         size_t * input_size, size_t *filter_size, size_t num_filters, size_t *strides, size_t *output_size, size_t pad_top, size_t pad_left, bool has_bias, size_t *predecessors, size_t num_predecessors, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool is_refinement);
 
 neuron_t *neuron_alloc(void);
+
+elina_dim_t run_concrete_img_deeppoly(elina_manager_t* man, elina_abstract0_t* element);
+
+void* clear_conVal_status(elina_manager_t* man, elina_abstract0_t* element);
 
 elina_linexpr0_t * get_lexpr_for_output_neuron(elina_manager_t *man, elina_abstract0_t *abs, size_t i);
 

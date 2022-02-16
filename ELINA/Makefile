@@ -35,9 +35,8 @@ endif
 	(cd elina_zones; make all)
 	(cd elina_zonotope; make all) 
 	(cd zonoml; make all)
-ifneq ($(HAS_CDD),)
 	(cd fppoly; make all)
-endif
+	(cd fconv; make all)
 
 
 install:
@@ -51,9 +50,8 @@ endif
 	(cd elina_zones; make install)
 	(cd elina_zonotope; make install)
 	(cd zonoml; make install)
-ifneq ($(HAS_CDD),)
 	(cd fppoly; make install)
-endif
+	(cd fconv; make install)
 	(cd apron_interface; make install)
 
 clean:
@@ -67,7 +65,7 @@ endif
 	(cd elina_zones; make clean)
 	(cd elina_zonotope; make clean)
 	(cd zonoml; make clean)
-ifneq ($(HAS_CDD),)
 	(cd fppoly; make clean)
-endif
+	(cd fconv; make clean)
+
 

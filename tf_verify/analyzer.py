@@ -124,6 +124,7 @@ class Analyzer:
             self.label_deviation_lb = label_deviation_lb
             self.is_spurious = is_spurious
             self.network_with_subgraph_encoding = network_with_subgraph_encoding
+            self.multi_cex_is_spurious = multi_cex_is_spurious
         self.domain = domain
         self.nn = nn
         self.timeout_lp = timeout_lp
@@ -166,7 +167,6 @@ class Analyzer:
             return element, testing_nlb, testing_nub
         return element, nlb, nub
     
-    
     def analyze(self):
         """
         analyses the network with the given input
@@ -177,7 +177,6 @@ class Analyzer:
             index of the dominant class. If no class dominates then returns -1
         """
         element, nlb, nub = self.get_abstract0()
-        #print("leave get_abstract0()")
         output_size = 0
         output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
         dominant_class = -1
@@ -213,9 +212,7 @@ class Analyzer:
                 if flag:
                     dominant_class = i
                     break
-        #print("enter abstract_free() in python")
         elina_abstract0_free(self.man, element)
-        #print("End analyze() in python")
         return dominant_class, nlb, nub, label_failed, x
 
     def analyze_groud_truth_label(self, ground_truth_label):
@@ -272,7 +269,7 @@ class Analyzer:
             spurious_count = 0
             # print(sorted_d)
             for poten_cex in sorted_d:
-                # print("Adversarial label ", poten_cex)
+                print("Adversarial label ", poten_cex)
                 if self.is_spurious(self.man, element, ground_truth_label, poten_cex, self.layer_by_layer, self.is_blk_segmentation, self.blk_size, self.is_sum_def_over_input, spurious_list, spurious_count, self.MAX_ITER):
                     potential_adv_count = potential_adv_count - 1
                     spurious_list.append(poten_cex)
@@ -357,7 +354,7 @@ class Analyzer:
             
         #print("enter abstract_free() in python")
         elina_abstract0_free(self.man, element)
-        #print("End analyze() in python")
+        # print("End analyze() in python")
         return dominant_class, nlb, nub, label_failed, x
 
     def analyze_with_subgraph_encoding(self, ground_truth_label):
@@ -415,4 +412,89 @@ class Analyzer:
         #print("End analyze() in python")
         print(nlb[-1])
         # print(nub)
+        return dominant_class, nlb, nub, label_failed, x
+
+    def analyze_with_multi_cex_pruning(self, ground_truth_label):
+        """
+        analyses the network with the given input
+        
+        Returns
+        -------
+        output: int
+            index of the dominant class. If no class dominates then returns -1
+        """
+        assert ground_truth_label!=-1, "The ground truth label cannot be -1!!!!!!!!!!!!!"
+        assert self.output_constraints is None, "The output constraints are supposed to be None"
+        assert self.prop == -1, "The prop are supposed to be deactivated"
+        element, nlb, nub = self.get_abstract0()
+        # print(nlb, nub)
+        output_size = 0
+        output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
+        # print(output_size)
+        dominant_class = -1
+        label_failed = []
+        potential_adv_labels = {} 
+        adversarial_list = []
+        # potential_adv_labels is the dictionary where key is the adv label i and value is the deviation ground_truth_label-i
+        x = None
+        
+        adv_labels = []
+        sorted_adv_labels = []
+        # print("output_size ",output_size)
+        for i in range(output_size):
+            if ground_truth_label!=i:
+                # print("a", i)
+                adv_labels.append(i)
+
+        # print("adv_labels",adv_labels)   
+        flag = True
+        potential_adv_count = 0
+        for j in adv_labels:
+            # if not self.is_greater(self.man, element, ground_truth_label, j, self.use_default_heuristic, self.layer_by_layer, self.is_residual, self.is_blk_segmentation, self.blk_size, self.is_early_terminate, self.early_termi_thre, self.is_sum_def_over_input, self.is_refinement):
+            lb = self.label_deviation_lb(self.man, element, ground_truth_label, j, self.use_default_heuristic, self.layer_by_layer, self.is_residual, self.is_blk_segmentation, self.blk_size, self.is_early_terminate, self.early_termi_thre, self.is_sum_def_over_input, self.is_refinement)
+            # print(j, lb)
+            if lb < 0:
+                # testing if label is always greater than j
+                flag = False
+                adversarial_list.append(j)
+                potential_adv_labels[j] = lb
+                potential_adv_count = potential_adv_count + 1
+        if flag:
+            # if we successfully mark the groud truth label as dominant label
+            dominant_class = ground_truth_label
+        elif self.is_refinement:
+            # do the spurious region pruning refinement
+            sorted_d = dict(sorted(potential_adv_labels.items(), key=lambda x: x[1],reverse=True))
+            spurious_list = []
+            spurious_count = 0
+            for poten_cex in sorted_d:
+                sorted_adv_labels.append(poten_cex)
+            n = 0
+            while(n < len(sorted_adv_labels)):
+                if(n+1 < len(sorted_adv_labels)):
+                    if self.multi_cex_is_spurious(self.man, element, ground_truth_label, sorted_adv_labels[n], sorted_adv_labels[n+1], spurious_list, spurious_count, self.MAX_ITER):
+                        potential_adv_count = potential_adv_count - 2
+                        spurious_list.append(sorted_adv_labels[n])
+                        spurious_list.append(sorted_adv_labels[n+1])
+                        spurious_count = spurious_count + 2
+                        n = n + 2
+                    else:
+                        break
+                else:
+                    if self.multi_cex_is_spurious(self.man, element, ground_truth_label, sorted_adv_labels[n], ground_truth_label, spurious_list, spurious_count, self.MAX_ITER):
+                        potential_adv_count = potential_adv_count - 1
+                        spurious_list.append(sorted_adv_labels[n])
+                        spurious_count = spurious_count + 1
+                        n = n + 1
+                    else:
+                        break
+
+            if(potential_adv_count == 0):
+                # print("Successfully refine the result")
+                # print(spurious_list)
+                dominant_class = ground_truth_label
+            
+        #print("enter abstract_free() in python")
+        elina_abstract0_free(self.man, element)
+        #print("End analyze() in python")
         return dominant_class, nlb, nub, label_failed, x

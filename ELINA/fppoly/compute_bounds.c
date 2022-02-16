@@ -336,7 +336,7 @@ double compute_lb_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp,
 		free_expr(expr);
 	}
  	//printf("The inf coeffs in the lexpr are %f and %f\n",expr->inf_coeff[0],expr->inf_coeff[1]);
-        //printf("compute lb from expr returns %f\n",res_inf);
+        // printf("compute lb from expr returns %f\n",res_inf);
         //fflush(stdout);
 	return res_inf;
 }
@@ -415,6 +415,40 @@ double get_ub_using_predecessor_layer(fppoly_internal_t * pr,fppoly_t *fp, expr_
 }
 
 //begin of my new functions
+double compute_concrete_value_from_expr(fppoly_internal_t *pr, expr_t * expr, fppoly_t * fp, int layerno){
+//This function is used to compute a concrete value when preceding neurons all take one value also
+#ifdef GUROBI
+    if ((fp->input_lexpr!=NULL) && (fp->input_uexpr!=NULL) && layerno==-1 && fp->spatial_size > 0) {
+        return expr->sup_cst + substitute_spatial_gurobi(expr, fp, GRB_MAXIMIZE);
+    }
+#endif
+	size_t i,k;
+	double tmp1, tmp2;
+	assert((fp->input_lexpr==NULL) && (fp->input_uexpr==NULL));
+	size_t dims = expr->size;
+	double res_sup = expr->sup_cst;
+	if(expr->inf_coeff==NULL || expr->sup_coeff==NULL){
+		return res_sup;
+	}
+	for(i=0; i < dims; i++){
+		if(expr->type==DENSE){
+			k = i;
+		}
+		else{
+			k = expr->dim[i];
+		}		
+		if(layerno==-1){
+			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],-fp->input_val[k],fp->input_val[k]);
+		}
+		else{
+			elina_double_interval_mul(&tmp1,&tmp2,expr->inf_coeff[i],expr->sup_coeff[i],-fp->layers[layerno]->neurons[k]->conVal,fp->layers[layerno]->neurons[k]->conVal);
+		}
+		res_sup = res_sup + tmp2;
+			
+	}
+	return res_sup;	
+}
+
 expr_t * expr_replace_with_summary_over_input(fppoly_internal_t * pr, expr_t * expr, neuron_t ** neurons, bool is_lower){
 	if(expr->size==0){
 		return copy_cst_expr(expr);
