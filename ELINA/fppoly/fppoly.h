@@ -200,9 +200,15 @@ bool is_greater(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y,
 
 bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, bool layer_by_layer, bool is_blk_segmentation, int blk_size, bool is_sum_def_over_input, int * spurious_list, int spurious_count, int MAX_ITER);
 
-bool network_with_subgraph_encoding(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, int * adversarial_list, int adv_count);
-
 bool multi_cex_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex1, elina_dim_t poten_cex2, int * spurious_list, int spurious_count, int MAX_ITER);
+
+bool multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id, double * coeffs, int rows, int cols);
+
+bool multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id);
+
+void* clear_neurons_status(elina_manager_t* man, elina_abstract0_t* element);
+
+void* run_deeppoly(elina_manager_t* man, elina_abstract0_t* element);
 
 double label_deviation_lb(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t y, elina_dim_t x, bool layer_by_layer, bool is_residual, bool is_blk_segmentation, int blk_size, bool is_early_terminate, int early_termi_thre, bool is_sum_def_over_input, bool is_refinement);
 

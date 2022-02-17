@@ -202,10 +202,6 @@ def fppoly_from_network_input_poly(man, intdim, realdim, inf_array, sup_array,
 
     return res
 
-
-
-
-
 def handle_fully_connected_layer(man, element,weights, bias,  size, num_pixels, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
     handle the first FFN ReLU layer
@@ -356,7 +352,6 @@ def handle_mul_layer(man, element, cst,  size, predecessors, num_predecessors, l
         print(inst)	
     
     return
-
 
 def handle_relu_layer(man, element, num_neurons, predecessors, num_predecessors, use_default_heuristics, is_blk_segmentation, blk_size, is_residual, is_refinement):
     """
@@ -519,6 +514,80 @@ def multi_cex_is_spurious(man, element, ground_truth_label, poten_cex1, poten_ce
         print(inst)
     return res
 
+def multi_cex_spurious_with_cdd(man, element, ground_truth_label, multi_cex, multi_count, spurious_list, spurious_count, cur_iter_id):
+    """
+    To check if the multi adversarial labels are spurious or not at the same time
+    Using cdd to compute the disjunction of the convex hulls
+    Returns
+    -------
+    res = boolean
+    """
+    res= None
+    try:
+        multi_cex_spurious_with_cdd_c = fppoly_api.multi_cex_spurious_with_cdd
+        multi_cex_spurious_with_cdd_c.restype = c_bool
+        spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
+        multi_cex_np = np.ascontiguousarray(multi_cex, dtype=np.uintc)
+        multi_cex_spurious_with_cdd_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int]
+        res = multi_cex_spurious_with_cdd_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id)
+    except Exception as inst:
+        print('Problem with loading/calling "multi_cex_spurious_with_cdd" from "libfppoly.so"')
+        print(inst)
+    return res
+
+def multi_cex_spurious_with_prima(man, element, ground_truth_label, multi_cex, multi_count, spurious_list, spurious_count, cur_iter_id, coeffs, rows, cols):
+    """
+    To check if the multi adversarial labels are spurious or not at the same time
+    Using cdd to compute the disjunction of the convex hulls
+    Returns
+    -------
+    res = boolean
+    """
+    res= None
+    try:
+        multi_cex_spurious_with_prima_c = fppoly_api.multi_cex_spurious_with_prima
+        multi_cex_spurious_with_prima_c.restype = c_bool
+        spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
+        multi_cex_np = np.ascontiguousarray(multi_cex, dtype=np.uintc)
+        multi_cex_spurious_with_prima_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int, ndpointer(ctypes.c_double), c_int, c_int]
+        res = multi_cex_spurious_with_prima_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id, coeffs, rows, cols)
+    except Exception as inst:
+        print('Problem with loading/calling "multi_cex_spurious_with_prima" from "libfppoly.so"')
+        print(inst)
+    return res
+
+def clear_neurons_status(man,element):
+    """
+        Clear and reset the neuron status
+        Returns
+        -------
+        None
+        """
+    try:
+        clear_neurons_status_c = fppoly_api.clear_neurons_status
+        clear_neurons_status_c.restype = None
+        clear_neurons_status_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr]
+        clear_neurons_status_c(man, element)
+    except:
+        print('Problem with loading/calling "clear_neurons_status" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr to the function')
+
+def run_deeppoly(man,element):
+    """
+        Clear and reset the neuron status
+        Returns
+        -------
+        None
+        """
+    try:
+        run_deeppoly_c = fppoly_api.run_deeppoly
+        run_deeppoly_c.restype = None
+        run_deeppoly_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr]
+        run_deeppoly_c(man, element)
+    except:
+        print('Problem with loading/calling "run_deeppoly" from "fppoly.so"')
+        print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr to the function')
+
 def network_with_subgraph_encoding(man, element, ground_truth_label, adversarial_list, adv_count):
     """
      To check and try to prune each adversarial labels with subgraph encoding for the network
@@ -595,7 +664,6 @@ def handle_convolutional_layer(man, element, filter_weights, filter_bias,  input
         print(inst)
     return
 
-
 def handle_batchnormalization_layer(man, element, weight_para, bias_para, output_size, input_size, parameter_length, predecessors, num_predecessors, layer_by_layer, is_residual, is_blk_segmentation, blk_size, is_early_terminate, early_termi_thre, is_sum_def_over_input, is_refinement):
     """
     Batchnormalization layer
@@ -634,7 +702,6 @@ def handle_batchnormalization_layer(man, element, weight_para, bias_para, output
         print('Problem with loading/calling "handle_batchnormalization_layer" from "libfppoly.so"')
         print(inst)
     return
-
 
 def handle_pool_layer(man, element, pool_size, input_size, strides, pad_top, pad_left, output_size, predecessors, num_predecessors, is_maxpool):
     """
@@ -1042,7 +1109,6 @@ def free_non_lstm_layer_expr(man,element,layerno):
     except:
         print('Problem with loading/calling "free_non_lstm_layer_expr" from "fppoly.so"')
         print('Make sure you are passing ElinaManagerPtr, ElinaAbstract0Ptr, c_size_t to the function')
-
 
 
 def update_activation_upper_bound_for_neuron(man, element,layerno, neuron_no, coeff, dim, size):

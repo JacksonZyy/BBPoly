@@ -41,7 +41,7 @@ endif
 
 INCLUDES += -I ../../gurobi950/linux64/include/
 DFLAGS += -m64
-LIBS += -lgurobi90 -L ../../gurobi950/linux64/lib
+LIBS += -lgurobi95 -L ../../gurobi950/linux64/lib
 
 INSTALL = install
 INSTALLd = install -d

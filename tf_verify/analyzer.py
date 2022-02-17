@@ -2,9 +2,11 @@
 @author: Adrian Hoffmann
 '''
 
+from doctest import FAIL_FAST
 from elina_abstract0 import *
 from elina_manager import *
 from deeppoly_nodes import *
+from krelu import *
 from functools import reduce
 from ai_milp import milp_callback
 import gc
@@ -139,7 +141,6 @@ class Analyzer:
     def __del__(self):
         elina_manager_free(self.man)
         
-    
     def get_abstract0(self):
         """
         processes self.ir_list and returns the resulting abstract element
@@ -414,9 +415,9 @@ class Analyzer:
         # print(nub)
         return dominant_class, nlb, nub, label_failed, x
 
-    def analyze_with_multi_cex_pruning(self, ground_truth_label):
+    def analyze_with_multi_cex_pruning_cdd(self, ground_truth_label):
         """
-        analyses the network with the given input
+        analyses the network with the given ground truth label
         
         Returns
         -------
@@ -498,3 +499,129 @@ class Analyzer:
         elina_abstract0_free(self.man, element)
         #print("End analyze() in python")
         return dominant_class, nlb, nub, label_failed, x
+
+    def prune_with_prima_encoding(self, ground_truth_label, multi_cex_count = 2):
+        """
+        analyses the network with the given ground truth label
+        
+        Returns
+        -------
+        output: int
+            index of the dominant class. If no class dominates then returns -1
+        """
+        assert ground_truth_label!=-1, "The ground truth label cannot be -1!!!!!!!!!!!!!"
+        assert self.output_constraints is None, "The output constraints are supposed to be None"
+        assert self.prop == -1, "The prop are supposed to be deactivated"
+        element, nlb, nub = self.get_abstract0()
+        print(nlb[-1], nub[-1])
+        output_size = 0
+        output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
+        dominant_class = -1
+        label_failed = [] # we can use this to record the actual counterexample we find out using LP solution
+        potential_adv_labels = {} 
+        # potential_adv_labels is the dictionary where key is the adv label i and value is the deviation ground_truth_label-i
+        x = None
+        
+        adv_labels = []
+        sorted_adv_labels = []
+        for i in range(output_size):
+            if ground_truth_label!=i:
+                adv_labels.append(i)
+        flag = True
+        potential_adv_count = 0
+        for j in adv_labels:
+            lb = self.label_deviation_lb(self.man, element, ground_truth_label, j, self.use_default_heuristic, self.layer_by_layer, self.is_residual, self.is_blk_segmentation, self.blk_size, self.is_early_terminate, self.early_termi_thre, self.is_sum_def_over_input, self.is_refinement)
+            if lb < 0:
+                # testing if label is always greater than j
+                flag = False
+                potential_adv_labels[j] = lb
+                potential_adv_count = potential_adv_count + 1
+        if flag:
+            # if we successfully mark the groud truth label as dominant label
+            dominant_class = ground_truth_label
+        elif self.is_refinement:
+            # do the spurious region pruning refinement
+            sorted_d = dict(sorted(potential_adv_labels.items(), key=lambda x: x[1],reverse=True))
+            spurious_list = []
+            for poten_cex in sorted_d:
+                sorted_adv_labels.append(poten_cex)
+            n = 0
+            while(n < len(sorted_adv_labels)):
+                if(n+multi_cex_count <= len(sorted_adv_labels)):
+                    if(self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:n+multi_cex_count], len(nlb), spurious_list)):
+                        spurious_list.extend(sorted_adv_labels[n:n+multi_cex_count])
+                        potential_adv_count = potential_adv_count - multi_cex_count
+                        n = n + multi_cex_count
+                    else:
+                        break
+                else:
+                    if(self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:len(sorted_adv_labels)], len(nlb), spurious_list)):
+                        spurious_list.extend(sorted_adv_labels[n:len(sorted_adv_labels)])
+                        potential_adv_count = potential_adv_count - (len(sorted_adv_labels) - n)
+                        n = len(sorted_adv_labels)
+                    else:
+                        break
+
+            if(potential_adv_count == 0):
+                print("Successfully refine the result")
+                dominant_class = ground_truth_label
+            
+        elina_abstract0_free(self.man, element)
+        return dominant_class, nlb, nub, label_failed, x
+
+    def check_multi_adv_labels(self, element, ground_truth_label, multi_list, total_layer_num, spurious_list):
+        # if any stablized node, leave it to cdd to handle it
+        itr_count = 0 
+        clear_neurons_status(self.man, element)
+        run_deeppoly(self.man, element)
+        while(itr_count < self.MAX_ITER):
+            # get the bound of input neuron to the output layer
+            KAct.type = "ReLU"
+            itr_count = itr_count + 1
+            bounds = box_for_layer(self.man, element, total_layer_num-2)
+            # print("The second last layer is ", total_layer_num - 2)
+            itv = [bounds[i] for i in range(10)]
+            nlb = [x.contents.inf.contents.val.dbl for x in itv]
+            nub = [x.contents.sup.contents.val.dbl for x in itv]
+            elina_interval_array_free(bounds,10)
+            unstable_var = [i for i in multi_list if nlb[i] < 0 < nub[i]]
+            if(nlb[ground_truth_label] < 0 < nub[ground_truth_label]):
+                unstable_var.append(ground_truth_label)
+            if(len(unstable_var) == len(multi_list) + 1 and len(multi_list)>=2):
+                # use prima to handle the disjunction if all the involved neurons are unstable
+                varsid = [ground_truth_label]
+                varsid.extend(multi_list)
+                size = 3**len(varsid) - 1
+                linexpr0 = elina_linexpr0_array_alloc(size)
+                i = 0
+                for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
+                    if all(c == 0 for c in coeffs):
+                        continue
+                    linexpr0[i] = generate_linexpr0(0, varsid, coeffs)
+                    i = i + 1
+                upper_bound = get_upper_bound_for_linexpr0(self.man,element,linexpr0, size, total_layer_num-2)
+                input_hrep = []
+                i = 0
+                for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
+                    if all(c == 0 for c in coeffs):
+                        continue
+                    input_hrep.append([upper_bound[i]] + [-c for c in coeffs])
+                    i = i + 1
+                # previous one compute the input polytope
+                kact_results = make_kactivation_obj(input_hrep, True)
+                rows = 0
+                cols = 2*len(varsid)+1
+                convex_coeffs = []
+                for row in kact_results.cons:
+                    rows = rows + 1
+                    for i in range(cols):
+                        convex_coeffs.append(row[i])
+                if(multi_cex_spurious_with_prima(self.man, element, ground_truth_label, multi_list, len(multi_list), spurious_list, len(spurious_list), itr_count, np.float64(convex_coeffs), rows, cols)):
+                    return True
+                # np.ascontiguousarray(convex_coeffs.reshape(-1), dtype=np.float64)
+            else:
+                # use cdd to handle the disjunction
+                if(multi_cex_spurious_with_cdd(self.man, element, ground_truth_label, multi_list, len(multi_list), spurious_list, len(spurious_list), itr_count)):
+                    return True
+        return False
+        
