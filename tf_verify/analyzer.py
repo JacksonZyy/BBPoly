@@ -513,7 +513,8 @@ class Analyzer:
         assert self.output_constraints is None, "The output constraints are supposed to be None"
         assert self.prop == -1, "The prop are supposed to be deactivated"
         element, nlb, nub = self.get_abstract0()
-        print(nlb[-1], nub[-1])
+        # print(nlb[-2])
+        # print(nub[-2])
         output_size = 0
         output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
         dominant_class = -1
@@ -548,6 +549,7 @@ class Analyzer:
             n = 0
             while(n < len(sorted_adv_labels)):
                 if(n+multi_cex_count <= len(sorted_adv_labels)):
+                    # self.prima_calling_test()
                     if(self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:n+multi_cex_count], len(nlb), spurious_list)):
                         spurious_list.extend(sorted_adv_labels[n:n+multi_cex_count])
                         potential_adv_count = potential_adv_count - multi_cex_count
@@ -576,7 +578,6 @@ class Analyzer:
         run_deeppoly(self.man, element)
         while(itr_count < self.MAX_ITER):
             # get the bound of input neuron to the output layer
-            KAct.type = "ReLU"
             itr_count = itr_count + 1
             bounds = box_for_layer(self.man, element, total_layer_num-2)
             # print("The second last layer is ", total_layer_num - 2)
@@ -584,13 +585,17 @@ class Analyzer:
             nlb = [x.contents.inf.contents.val.dbl for x in itv]
             nub = [x.contents.sup.contents.val.dbl for x in itv]
             elina_interval_array_free(bounds,10)
+            # print(nlb)
+            # print(nub)
             unstable_var = [i for i in multi_list if nlb[i] < 0 < nub[i]]
             if(nlb[ground_truth_label] < 0 < nub[ground_truth_label]):
                 unstable_var.append(ground_truth_label)
             if(len(unstable_var) == len(multi_list) + 1 and len(multi_list)>=2):
                 # use prima to handle the disjunction if all the involved neurons are unstable
+                KAct.type = "ReLU"
                 varsid = [ground_truth_label]
                 varsid.extend(multi_list)
+                # print(varsid)
                 size = 3**len(varsid) - 1
                 linexpr0 = elina_linexpr0_array_alloc(size)
                 i = 0
@@ -608,14 +613,17 @@ class Analyzer:
                     input_hrep.append([upper_bound[i]] + [-c for c in coeffs])
                     i = i + 1
                 # previous one compute the input polytope
+                # print(input_hrep)
                 kact_results = make_kactivation_obj(input_hrep, True)
                 rows = 0
                 cols = 2*len(varsid)+1
                 convex_coeffs = []
                 for row in kact_results.cons:
+                    print(row)
                     rows = rows + 1
                     for i in range(cols):
                         convex_coeffs.append(row[i])
+                # print(len(convex_coeffs), rows, cols)
                 if(multi_cex_spurious_with_prima(self.man, element, ground_truth_label, multi_list, len(multi_list), spurious_list, len(spurious_list), itr_count, np.float64(convex_coeffs), rows, cols)):
                     return True
                 # np.ascontiguousarray(convex_coeffs.reshape(-1), dtype=np.float64)
@@ -623,5 +631,34 @@ class Analyzer:
                 # use cdd to handle the disjunction
                 if(multi_cex_spurious_with_cdd(self.man, element, ground_truth_label, multi_list, len(multi_list), spurious_list, len(spurious_list), itr_count)):
                     return True
+        return False  
+        
+    def prima_calling_test(self):
+        KAct.type = "ReLU"
+        input_hrep = []
+        input_hrep.append([2.0, 1, 1])
+        input_hrep.append([2.0, 1, 0])
+        input_hrep.append([2.0, 1, -1])
+        input_hrep.append([2.0, 0, 1])
+        input_hrep.append([1.2, 0, -1])
+        input_hrep.append([2.0, -1, 1])
+        input_hrep.append([2.0, -1, 0])
+        input_hrep.append([2.0, -1, -1])
+        
+        print(input_hrep)
+        kact_results = make_kactivation_obj(input_hrep, True)
+        rows = 0
+        cols = 5
+        convex_coeffs = []
+        print("!!!!!!!!!!!!!!!!!!!!!")
+        for row in kact_results.cons:
+            print(row)
+            rows = rows + 1
+            for i in range(cols):
+                convex_coeffs.append(row[i])
+        print("!!!!!!!!!!!!!!!!!!!!!")
+        print(convex_coeffs)
+        print(rows)
         return False
+           
         

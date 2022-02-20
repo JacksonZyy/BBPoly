@@ -583,7 +583,7 @@ void *get_upper_bound_for_linexpr0_parallel(void *args){
 	elina_manager_t *man = data->man;
 	fppoly_t *fp = data->fp;
     fppoly_internal_t *pr = fppoly_init_from_manager(man, ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-        size_t layerno = data->layerno;
+	size_t layerno = data->layerno;
 	size_t idx_start = data->start;
 	size_t idx_end = data->end;
 	elina_linexpr0_t ** linexpr0 = data->linexpr0;
@@ -591,6 +591,7 @@ void *get_upper_bound_for_linexpr0_parallel(void *args){
 	size_t i;
 	for(i=idx_start; i < idx_end; i++){
 		expr_t * tmp = elina_linexpr0_to_expr(linexpr0[i]);
+		// expr_print(tmp);
 		double ub = compute_ub_from_expr(pr,tmp,fp,layerno);
         	if(linexpr0[i]->size==1){
 			res[i] = ub;
@@ -2291,8 +2292,8 @@ bool multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* elemen
 }
 
 dd_MatrixPtr convex_for_3cexs_prima(double * coeffs, int rows, int cols){
-	dd_PolyhedraPtr poly1, poly2, polyu;
-	dd_MatrixPtr A, E, G_poly1, G_poly2, G_polyu;
+	dd_PolyhedraPtr poly1, poly2, poly3, polyu;
+	dd_MatrixPtr A, E, G_poly1, G_poly2, G_poly3, G_polyu;
 	dd_rowrange m, count; 
 	dd_colrange d;
 	dd_ErrorType err;
@@ -2306,9 +2307,9 @@ dd_MatrixPtr convex_for_3cexs_prima(double * coeffs, int rows, int cols){
 			dd_set_d(A->matrix[i][j], coeffs[i*cols + j]);
 		}
 	}
-	// the initial space 
-	dd_set_d(A->matrix[rows][0],0); dd_set_d(A->matrix[rows][1], 0); dd_set_d(A->matrix[rows][2], 0); dd_set_d(A->matrix[rows][3], 0);
-	dd_set_d(A->matrix[rows][4],-1); dd_set_d(A->matrix[rows][5], 1); dd_set_d(A->matrix[rows][6], 0); 
+	
+	dd_set_d(A->matrix[rows][0],0); dd_set_d(A->matrix[rows][1], 0); dd_set_d(A->matrix[rows][2], 0); dd_set_d(A->matrix[rows][3], 0); dd_set_d(A->matrix[rows][4], 0);
+	dd_set_d(A->matrix[rows][5], -1); dd_set_d(A->matrix[rows][6], 1); dd_set_d(A->matrix[rows][7], 0); dd_set_d(A->matrix[rows][8], 0); 
 	//  cex1 - gc >= 0, branch condition constraint
 	A->representation=dd_Inequality;
 	poly1=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
@@ -2316,17 +2317,24 @@ dd_MatrixPtr convex_for_3cexs_prima(double * coeffs, int rows, int cols){
 	// printf("\nInput1 is H-representation:\n");
 	G_poly1=dd_CopyGenerators(poly1);
 
-	dd_set_d(A->matrix[rows][0],0); dd_set_d(A->matrix[rows][1], 0); dd_set_d(A->matrix[rows][2], 0); dd_set_d(A->matrix[rows][3], 0);
-	dd_set_d(A->matrix[rows][4],-1); dd_set_d(A->matrix[rows][5], 0); dd_set_d(A->matrix[rows][6], 1); 
+	dd_set_d(A->matrix[rows][0],0); dd_set_d(A->matrix[rows][1], 0); dd_set_d(A->matrix[rows][2], 0); dd_set_d(A->matrix[rows][3], 0); dd_set_d(A->matrix[rows][4], 0);
+	dd_set_d(A->matrix[rows][5], -1); dd_set_d(A->matrix[rows][6], 0); dd_set_d(A->matrix[rows][7], 1); dd_set_d(A->matrix[rows][8], 0); 
 	//  cex2 - gc >= 0, branch condition constraint
 	poly2=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
 	handle_cddlib_error(err);
 	// printf("\nInput2 is H-representation:\n");
 	G_poly2=dd_CopyGenerators(poly2);
 
+	dd_set_d(A->matrix[rows][0],0); dd_set_d(A->matrix[rows][1], 0); dd_set_d(A->matrix[rows][2], 0); dd_set_d(A->matrix[rows][3], 0); dd_set_d(A->matrix[rows][4], 0);
+	dd_set_d(A->matrix[rows][5], -1); dd_set_d(A->matrix[rows][6], 0); dd_set_d(A->matrix[rows][7], 0); dd_set_d(A->matrix[rows][8], 1); 
+	//  cex3 - gc >= 0, branch condition constraint
+	poly3=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
+	handle_cddlib_error(err);
+	// printf("\nInput2 is H-representation:\n");
+	G_poly3=dd_CopyGenerators(poly3);
 
 	// Compute the combination of four branches
-	m = G_poly1->rowsize + G_poly2->rowsize;
+	m = G_poly1->rowsize + G_poly2->rowsize + G_poly3->rowsize;
 	E = dd_CreateMatrix(m,d);
 	for (i=0; i < G_poly1->rowsize; i++){
 		for (j=0; j < G_poly1->colsize; j++){
@@ -2349,6 +2357,17 @@ dd_MatrixPtr convex_for_3cexs_prima(double * coeffs, int rows, int cols){
 			}
 		}
 	}
+	count += G_poly2->rowsize;
+	for (i=0; i < G_poly3->rowsize; i++){
+		for(j=0; j < G_poly3->colsize; j++){
+			if(revert_to_Real(G_poly3->matrix[i][j], &ax, &ix)){
+				dd_set_d(E->matrix[i+count][j], ix);
+			}
+			else{
+				dd_set_d(E->matrix[i+count][j], ax);
+			}
+		}
+	}
 	E->representation=dd_Generator;
 	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
 	handle_cddlib_error(err);
@@ -2356,8 +2375,8 @@ dd_MatrixPtr convex_for_3cexs_prima(double * coeffs, int rows, int cols){
 	G_polyu=dd_CopyInequalities(polyu);
 	// dd_WriteMatrix(stdout,E);  printf("\n");
 	// dd_WriteMatrix(stdout,G_polyu); printf("\n");
-	dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
-	dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); dd_FreePolyhedra(polyu);
+	dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); dd_FreeMatrix(G_poly3); 
+	dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); dd_FreePolyhedra(poly3); dd_FreePolyhedra(polyu);
 	return G_polyu;
 }
 
@@ -2377,6 +2396,10 @@ dd_MatrixPtr convex_for_2cexs_prima(double * coeffs, int rows, int cols){
 			dd_set_d(A->matrix[i][j], coeffs[i*cols + j]);
 		}
 	}
+	// for(j=0; j < cols; j++){
+	// 	revert_to_Real(A->matrix[4][j], &ax, &ix);
+	// 	printf("A->matrix[4][%i] is %.8f\n", j, ax);
+	// }
 	// the initial space 
 	dd_set_d(A->matrix[rows][0],0); dd_set_d(A->matrix[rows][1], 0); dd_set_d(A->matrix[rows][2], 0); dd_set_d(A->matrix[rows][3], 0);
 	dd_set_d(A->matrix[rows][4],-1); dd_set_d(A->matrix[rows][5], 1); dd_set_d(A->matrix[rows][6], 0); 
@@ -2588,6 +2611,7 @@ bool multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* elem
 		int out_idx = layer_var_start_idx[numlayers - 1]; int aff_idx = layer_var_start_idx[numlayers - 2];
 		if(multi_count==2){
 			// Compute the constraint of the union of two conditions y_c - y_1 <= 0 U y_c - y_2 <= 0
+			printf("Enter here with coeffs by prima, includes row %d and cols %d\n", rows, cols);
 			dd_MatrixPtr G_polyu = convex_for_2cexs_prima(coeffs, rows, cols);
 			for(a=0; a < G_polyu->rowsize; a++){
 				double bias, coeff1, coeff2, coeff3, coeff4, coeff5, coeff6;
@@ -2611,7 +2635,7 @@ bool multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* elem
 				revert_to_Real(G_polyu->matrix[a][6], &coeff6, &ix); revert_to_Real(G_polyu->matrix[a][7], &coeff7, &ix);
 				revert_to_Real(G_polyu->matrix[a][8], &coeff8, &ix);
 				double values[8] = {coeff1, coeff2, coeff3, coeff4, coeff5, coeff6, coeff7, coeff8}; 
-				int indexes[6] = {aff_idx+ground_truth_label, aff_idx+multi_cex[0], aff_idx+multi_cex[1], aff_idx+multi_cex[2], out_idx+ground_truth_label, out_idx+multi_cex[0], out_idx+multi_cex[1], out_idx+multi_cex[2]};
+				int indexes[8] = {aff_idx+ground_truth_label, aff_idx+multi_cex[0], aff_idx+multi_cex[1], aff_idx+multi_cex[2], out_idx+ground_truth_label, out_idx+multi_cex[0], out_idx+multi_cex[1], out_idx+multi_cex[2]};
 				error = GRBaddconstr(model, 8, indexes, values, GRB_GREATER_EQUAL, -bias, NULL);
 				error = GRBupdatemodel(model); handle_gurobi_error(error, env);
 			}
