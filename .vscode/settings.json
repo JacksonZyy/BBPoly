@@ -2,6 +2,14 @@
     "files.associations": {
         "time.h": "c",
         "random": "c",
-        "cdd.h": "c"
+        "cdd.h": "c",
+        "cddmp.h": "c",
+        "array": "c",
+        "hash_map": "c",
+        "bitset": "c",
+        "hash_set": "c",
+        "initializer_list": "c",
+        "string_view": "c",
+        "utility": "c"
     }
 }

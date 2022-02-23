@@ -1,0 +1,2 @@
+mnist_relu_6_100.onnx,mnist,img 0 with label 7,eps=0.025,NUSPoly,0.24413084983825684 secs,success
+mnist_relu_6_100.onnx,mnist,img 1 with label 2,eps=0.025,NUSPoly,0.25373172760009766 secs,success

@@ -513,8 +513,8 @@ class Analyzer:
         assert self.output_constraints is None, "The output constraints are supposed to be None"
         assert self.prop == -1, "The prop are supposed to be deactivated"
         element, nlb, nub = self.get_abstract0()
-        # print(nlb[-2])
-        # print(nub[-2])
+        print(nlb[-2])
+        print(nub[-2])
         output_size = 0
         output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
         dominant_class = -1
@@ -618,12 +618,28 @@ class Analyzer:
                 rows = 0
                 cols = 2*len(varsid)+1
                 convex_coeffs = []
+                non_redun_cons = []
                 for row in kact_results.cons:
-                    print(row)
+                    if non_redun_cons == []:
+                        non_redun_cons.append(row)
+                    elif all([any([(abs(element[i]-row[i]) >= 10**-8) for i in range(len(row))]) for element in non_redun_cons]):        
+                        non_redun_cons.append(row)
+               
+                for row in non_redun_cons:
+                    zero_list = []
                     rows = rows + 1
                     for i in range(cols):
-                        convex_coeffs.append(row[i])
-                # print(len(convex_coeffs), rows, cols)
+                        if(abs(row[i])<= 10**-7):
+                            zero_list.append(0.0)
+                            convex_coeffs.append(0)
+                        elif(abs(row[i]-1)<= 10**-7):
+                            zero_list.append(1.0)
+                            convex_coeffs.append(1.0)
+                        else:
+                            zero_list.append(row[i])
+                            convex_coeffs.append(row[i])
+                    # print(zero_list)
+                print(rows, cols)
                 if(multi_cex_spurious_with_prima(self.man, element, ground_truth_label, multi_list, len(multi_list), spurious_list, len(spurious_list), itr_count, np.float64(convex_coeffs), rows, cols)):
                     return True
                 # np.ascontiguousarray(convex_coeffs.reshape(-1), dtype=np.float64)
@@ -650,6 +666,16 @@ class Analyzer:
         rows = 0
         cols = 5
         convex_coeffs = []
+        print("!!!!!!!!!!!!!!!!!!!!!")
+        non_redun_cons = []
+        for row in kact_results.cons:
+            if non_redun_cons == []:
+                non_redun_cons.append(row)
+            elif all([any([element[i] != row[i] for i in range(len(row))]) for element in non_redun_cons]):        
+                non_redun_cons.append(row)
+        
+        for row in non_redun_cons:
+            print(row)
         print("!!!!!!!!!!!!!!!!!!!!!")
         for row in kact_results.cons:
             print(row)

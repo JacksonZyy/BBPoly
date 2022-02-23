@@ -148,6 +148,86 @@ dd_MatrixPtr convex_computation_for_2advLabels(double gt_lb, double gt_ub, doubl
 	return G_polyu;
 }
 
+dd_MatrixPtr convex_computation_for_2advLabels_with_inppoly(double gt_lb, double gt_ub, double cex1_lb, double cex1_ub, double cex2_lb, double cex2_ub, double * inp_poly){
+	dd_PolyhedraPtr poly1, poly2, polyu;
+	dd_MatrixPtr A, E, G_poly1, G_poly2, G_polyu;
+	dd_rowrange m, count; 
+	dd_colrange d;
+	dd_ErrorType err;
+	long i,j,ix;	double ax; 
+	dd_set_global_constants(); 
+	m=7+26; d=4;
+	A=dd_CreateMatrix(m,d);
+	dd_set_d(A->matrix[0][0],-gt_lb); dd_set_d(A->matrix[0][1], 1); dd_set_d(A->matrix[0][2], 0); dd_set_d(A->matrix[0][3], 0);
+	dd_set_d(A->matrix[1][0],gt_ub); dd_set_d(A->matrix[1][1], -1); dd_set_d(A->matrix[1][2], 0); dd_set_d(A->matrix[1][3], 0);
+	dd_set_d(A->matrix[2][0],-cex1_lb); dd_set_d(A->matrix[2][1], 0); dd_set_d(A->matrix[2][2], 1); dd_set_d(A->matrix[2][3], 0);
+	dd_set_d(A->matrix[3][0],cex1_ub); dd_set_d(A->matrix[3][1], 0); dd_set_d(A->matrix[3][2], -1); dd_set_d(A->matrix[3][3], 0);
+	dd_set_d(A->matrix[4][0],-cex2_lb); dd_set_d(A->matrix[4][1], 0); dd_set_d(A->matrix[4][2], 0); dd_set_d(A->matrix[4][3], 1);
+	dd_set_d(A->matrix[5][0],cex2_ub); dd_set_d(A->matrix[5][1], 0); dd_set_d(A->matrix[5][2], 0); dd_set_d(A->matrix[5][3], -1);
+	/*  -gt_lb     +  gc   >= 0,    gt_ub     -  gc   >= 0
+		-cex1_lb         +  cex1   >= 0  , cex1_ub          -  cex1   >= 0   
+		-cex2_lb                      cex2  >= 0, cex2_ub					  -cex2   >= 0
+		variable interval constraint */
+	for (i=0; i < 26; i++){
+		dd_set_d(A->matrix[6+i][0],inp_poly[i*4]); dd_set_d(A->matrix[6+i][1], inp_poly[i*4+1]); dd_set_d(A->matrix[6+i][2], inp_poly[i*4+2]); dd_set_d(A->matrix[6+i][3], inp_poly[i*4+3]);
+	}
+	dd_set_d(A->matrix[m-1][0],0); dd_set_d(A->matrix[m-1][1], -1); dd_set_d(A->matrix[m-1][2], 1); dd_set_d(A->matrix[m-1][3], 0);
+	/*  gc - cex1 <= 0
+		cex1 - gc >= 0
+		branch condition constraint
+	*/
+	A->representation=dd_Inequality;
+	poly1=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
+	handle_cddlib_error(err);
+	// printf("\nInput1 is H-representation:\n");
+	G_poly1=dd_CopyGenerators(poly1);
+
+	dd_set_d(A->matrix[m-1][0],0); dd_set_d(A->matrix[m-1][1], -1); dd_set_d(A->matrix[m-1][2], 0); dd_set_d(A->matrix[m-1][3], 1);
+	/*  cex2 - gc >= 0
+		branch condition constraint
+	*/
+	poly2=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
+	handle_cddlib_error(err);
+	// printf("\nInput2 is H-representation:\n");
+	G_poly2=dd_CopyGenerators(poly2);
+
+
+	// Compute the combination of four branches
+	m = G_poly1->rowsize + G_poly2->rowsize;
+	E = dd_CreateMatrix(m,d);
+	for (i=0; i < G_poly1->rowsize; i++){
+		for (j=0; j < G_poly1->colsize; j++) {
+			if(revert_to_Real(G_poly1->matrix[i][j], &ax, &ix)){
+				dd_set_d(E->matrix[i][j], ix);
+			}
+			else{
+				dd_set_d(E->matrix[i][j], ax);
+			}
+		}
+	}
+	count = G_poly1->rowsize;
+	for (i=0; i < G_poly2->rowsize; i++) {
+		for(j=0; j < G_poly2->colsize; j++){
+			if(revert_to_Real(G_poly2->matrix[i][j], &ax, &ix)){
+				dd_set_d(E->matrix[i+count][j], ix);
+			}
+			else{
+				dd_set_d(E->matrix[i+count][j], ax);
+			}
+		}
+	}
+	E->representation=dd_Generator;
+	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
+	handle_cddlib_error(err);
+	// printf("\nInput is V-representation of four polys:\n");
+	G_polyu=dd_CopyInequalities(polyu);
+	// dd_WriteMatrix(stdout,E);  printf("\n");
+	// dd_WriteMatrix(stdout,G_polyu); printf("\n"); //Check if the number of constraint is 7
+	dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
+	dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); dd_FreePolyhedra(polyu);
+	return G_polyu;
+}
+ 
 dd_MatrixPtr convex_computation_for_3advLabels(double gt_lb, double gt_ub, double cex1_lb, double cex1_ub, double cex2_lb, double cex2_ub, double cex3_lb, double cex3_ub){
 	dd_PolyhedraPtr poly1, poly2, poly3, polyu;
 	dd_MatrixPtr A, E, G_poly1, G_poly2, G_poly3, G_polyu;
@@ -1390,9 +1470,9 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 				clear_conVal_status(man, element);
 				elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
 				if(classified_label != ground_truth_label){
-					for(j=0; j < fp->num_pixels; j++){
-						printf("The CEX dim %zu within range [%.4f, %.4f] is %.4f\n", j, -fp->input_inf[j], fp->input_sup[j], fp->input_val[j]);
-					}
+					// for(j=0; j < fp->num_pixels; j++){
+					// 	printf("The CEX dim %zu within range [%.4f, %.4f] is %.4f\n", j, -fp->input_inf[j], fp->input_sup[j], fp->input_val[j]);
+					// }
 					GRBfreemodel(model); GRBfreeenv(env);
 					printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
 					return false;
@@ -1416,9 +1496,9 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 				clear_conVal_status(man, element);
 				elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
 				if(classified_label != ground_truth_label){
-					for(j=0; j < fp->num_pixels; j++){
-						printf("The CEX dim %zu within range [%.4f, %.4f] is %.4f\n", j, -fp->input_inf[j], fp->input_sup[j], fp->input_val[j]);
-					}
+					// for(j=0; j < fp->num_pixels; j++){
+					// 	printf("The CEX dim %zu within range [%.4f, %.4f] is %.4f\n", j, -fp->input_inf[j], fp->input_sup[j], fp->input_val[j]);
+					// }
 					GRBfreemodel(model); GRBfreeenv(env);
 					printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
 					return false;
@@ -1489,9 +1569,9 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 				clear_conVal_status(man, element);
 				elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
 				if(classified_label != ground_truth_label){
-					for(j=0; j < fp->num_pixels; j++){
-						printf("The CEX dim %zu within range [%.4f, %.4f] is %.4f\n", j, -fp->input_inf[j], fp->input_sup[j], fp->input_val[j]);
-					}
+					// for(j=0; j < fp->num_pixels; j++){
+					// 	printf("The CEX dim %zu within range [%.4f, %.4f] is %.4f\n", j, -fp->input_inf[j], fp->input_sup[j], fp->input_val[j]);
+					// }
 					GRBfreemodel(model); GRBfreeenv(env);
 					printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
 					return false;
@@ -1520,9 +1600,9 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 				clear_conVal_status(man, element);
 				elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
 				if(classified_label != ground_truth_label){
-					for(j=0; j < fp->num_pixels; j++){
-						printf("The CEX dim %zu within range [%.4f, %.4f] is %.4f\n", j, -fp->input_inf[j], fp->input_sup[j], fp->input_val[j]);
-					}
+					// for(j=0; j < fp->num_pixels; j++){
+					// 	printf("The CEX dim %zu within range [%.4f, %.4f] is %.4f\n", j, -fp->input_inf[j], fp->input_sup[j], fp->input_val[j]);
+					// }
 					GRBfreemodel(model); GRBfreeenv(env);
 					printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
 					return false;
@@ -1953,6 +2033,50 @@ bool multi_cex_is_spurious(elina_manager_t* man, elina_abstract0_t* element, eli
 	return false;
 }
 
+void * compute_3relu_inputpoly(elina_manager_t* man, elina_abstract0_t* element, double * inp_poly, elina_dim_t gc, elina_dim_t cex1, elina_dim_t cex2){
+	int coeff_list[3] = {-1, 0, 1}; int i,j,k;
+	int size = 26; int count = 0;
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+	// double inp_poly[size*4]; 
+	for(i = 0; i < 3; i++){
+		for(j = 0; j < 3; j++){
+			for(k = 0; k < 3; k++){
+				if(coeff_list[i]!=0 || coeff_list[j]!=0 || coeff_list[k]!=0){
+					inp_poly[count*4 + 1] = coeff_list[i];
+					inp_poly[count*4 + 2] = coeff_list[j];
+					inp_poly[count*4 + 3] = coeff_list[k];
+					expr_t * sub = (expr_t *)malloc(sizeof(expr_t));
+					sub->inf_cst = 0;
+					sub->sup_cst = 0;
+					sub->inf_coeff = (double*)malloc(3*sizeof(double));
+					sub->sup_coeff = (double*)malloc(3*sizeof(double));
+					sub->dim =(size_t *)malloc(3*sizeof(size_t));
+					sub->size = 3;
+					sub->type = SPARSE;
+					sub->inf_coeff[0] = -inp_poly[count*4 + 1]; sub->sup_coeff[0] = inp_poly[count*4 + 1];
+					sub->dim[0] = gc;
+					sub->inf_coeff[1] = -inp_poly[count*4 + 2]; sub->sup_coeff[1] = inp_poly[count*4 + 2];
+					sub->dim[1] = cex1;
+					sub->inf_coeff[2] = -inp_poly[count*4 + 3]; sub->sup_coeff[2] = inp_poly[count*4 + 3];
+					sub->dim[2] = cex2;
+					int k;
+					double lb = get_lb_using_previous_layers(man, fp, &sub, fp->numlayers, false, false, false, 0, false, false, false, false);
+					inp_poly[count*4] = lb;
+					if(sub){
+						free_expr(sub);
+						sub = NULL;
+					}
+					count++;
+				}
+			}
+		}
+	}
+	// printf("Enter here\n");
+	assert(count == size);
+	return NULL;
+}
+
 bool multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id){
 	assert(multi_count<=3 && multi_count>=1);
 	int k, optimstatus;  long a, ix; int relu_refine_count = 0; 
@@ -2118,7 +2242,10 @@ bool multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* elemen
 			error = GRBaddconstr(model, 2, ind, val, GRB_LESS_EQUAL, 0.0, NULL);
 			error = GRBupdatemodel(model); handle_gurobi_error(error, env);	
 		}else if(fea_count == 2){
-			dd_MatrixPtr G_polyu = convex_computation_for_2advLabels(-out_nodes[ground_truth_label]->lb, out_nodes[ground_truth_label]->ub, -out_nodes[fea_idx_list[0]]->lb, out_nodes[fea_idx_list[0]]->ub, -out_nodes[fea_idx_list[1]]->lb, out_nodes[fea_idx_list[1]]->ub);
+			// Compute a input polytope like PRIMA
+			int size = 26; double inp_poly[size*4]; 
+			compute_3relu_inputpoly(man, element, inp_poly, ground_truth_label, fea_idx_list[0], fea_idx_list[1]);
+			dd_MatrixPtr G_polyu = convex_computation_for_2advLabels_with_inppoly(-out_nodes[ground_truth_label]->lb, out_nodes[ground_truth_label]->ub, -out_nodes[fea_idx_list[0]]->lb, out_nodes[fea_idx_list[0]]->ub, -out_nodes[fea_idx_list[1]]->lb, out_nodes[fea_idx_list[1]]->ub, inp_poly);
 			for(a=0; a < G_polyu->rowsize; a++){
 				double bias, coeff1, coeff2, coeff3;
 				revert_to_Real(G_polyu->matrix[a][0], &bias, &ix); revert_to_Real(G_polyu->matrix[a][1], &coeff1, &ix);
@@ -2188,6 +2315,14 @@ bool multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* elemen
 			handle_gurobi_error(error, env);
 			// printf("The start layer neuron %zu originally has lower bound %.4f, solved_lb is %.4f\n", i, -fp->input_inf[i], solved_lb);
 			fp->input_inf[i] = -(solved_lb - lp_solving_error);
+			error = GRBgetdblattrarray(model, "ScenNX", 0, fp->num_pixels, fp->input_val); handle_gurobi_error(error, env);
+			clear_conVal_status(man, element);
+			elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
+			if(classified_label != ground_truth_label){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
+				return false;
+			}
 		}
 		error = GRBsetintattr(model, "ModelSense", -1); //maximization
 		handle_gurobi_error(error, env);
@@ -2201,6 +2336,14 @@ bool multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* elemen
 			error = GRBgetdblattr(model, "ScenNObjVal", &solved_ub);
 			handle_gurobi_error(error, env);
 			fp->input_sup[i] = solved_ub + lp_solving_error;
+			error = GRBgetdblattrarray(model, "ScenNX", 0, fp->num_pixels, fp->input_val); handle_gurobi_error(error, env);
+			clear_conVal_status(man, element);
+			elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
+			if(classified_label != ground_truth_label){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
+				return false;
+			}
 		}
 		// multiple scenarios of unstable relu nodes
 		error = GRBsetintattr(model, "NumScenarios", 0);
@@ -2263,6 +2406,14 @@ bool multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* elemen
 				// printf("The refreshed pos Relu is layer %zu, index %zu\n",layer_info[i], index_info[i]);
 				relu_refine_count ++;
 			}	
+			error = GRBgetdblattrarray(model, "ScenNX", 0, fp->num_pixels, fp->input_val); handle_gurobi_error(error, env);
+			clear_conVal_status(man, element);
+			elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
+			if(classified_label != ground_truth_label){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
+				return false;
+			}
 		}
 		error = GRBsetintattr(model, "ModelSense", -1); //maximization
 		handle_gurobi_error(error, env);
@@ -2280,6 +2431,14 @@ bool multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* elemen
 			if(cur_layer->neurons[index_info[i]]->ub<=0){
 				// printf("The refreshed neg Relu is layer %zu, index %zu\n",layer_info[i], index_info[i]);
 				relu_refine_count ++;
+			}
+			error = GRBgetdblattrarray(model, "ScenNX", 0, fp->num_pixels, fp->input_val); handle_gurobi_error(error, env);
+			clear_conVal_status(man, element);
+			elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
+			if(classified_label != ground_truth_label){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
+				return false;
 			}
 		}
 		free(layer_info); free(index_info);
@@ -2383,10 +2542,10 @@ dd_MatrixPtr convex_for_3cexs_prima(double * coeffs, int rows, int cols){
 dd_MatrixPtr convex_for_2cexs_prima(double * coeffs, int rows, int cols){
 	dd_PolyhedraPtr poly1, poly2, polyu;
 	dd_MatrixPtr A, E, G_poly1, G_poly2, G_polyu;
-	dd_rowrange m, count; 
+	dd_rowrange m, count, non_dup_count; 
 	dd_colrange d;
 	dd_ErrorType err;
-	long i,j,ix; double ax;
+	long i,j,n,ix; double ax, ax2;
 	assert(cols == 7);
 	dd_set_global_constants();  /* First, this must be called to use cddlib. */
 	m=rows + 1; d=cols;
@@ -2407,48 +2566,113 @@ dd_MatrixPtr convex_for_2cexs_prima(double * coeffs, int rows, int cols){
 	A->representation=dd_Inequality;
 	poly1=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
 	handle_cddlib_error(err);
-	// printf("\nInput1 is H-representation:\n");
+	printf("Input1 is H-representation:\n");
 	G_poly1=dd_CopyGenerators(poly1);
+	printf("End processing P1\n");
 
 	dd_set_d(A->matrix[rows][0],0); dd_set_d(A->matrix[rows][1], 0); dd_set_d(A->matrix[rows][2], 0); dd_set_d(A->matrix[rows][3], 0);
 	dd_set_d(A->matrix[rows][4],-1); dd_set_d(A->matrix[rows][5], 0); dd_set_d(A->matrix[rows][6], 1); 
 	//  cex2 - gc >= 0, branch condition constraint
 	poly2=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
 	handle_cddlib_error(err);
-	// printf("\nInput2 is H-representation:\n");
+	printf("Input2 is H-representation:\n");
 	G_poly2=dd_CopyGenerators(poly2);
+	printf("End processing P2\n");
 
 
 	// Compute the combination of four branches
 	m = G_poly1->rowsize + G_poly2->rowsize;
-	E = dd_CreateMatrix(m,d);
+	double * non_dup_list = (double *)malloc(m*d*sizeof(double));
+	non_dup_count = 0;
+	bool row_diff, non_duplicate; 
 	for (i=0; i < G_poly1->rowsize; i++){
-		for (j=0; j < G_poly1->colsize; j++){
-			if(revert_to_Real(G_poly1->matrix[i][j], &ax, &ix)){
-				dd_set_d(E->matrix[i][j], ix);
+		non_duplicate = true;
+		for (n=0; n < non_dup_count; n++){
+			row_diff = false;
+			for(j=0; j < G_poly1->colsize; j++){
+				revert_to_Real(G_poly1->matrix[i][j], &ax2, &ix);
+				if(fabs(non_dup_list[n*d+j]-ax2) > dd_almostzero){
+					row_diff = true;
+					break;
+				}
 			}
-			else{
-				dd_set_d(E->matrix[i][j], ax);
+			if(row_diff == false){
+				non_duplicate = false;
+				break;
+			}	
+		}
+		if(non_duplicate){
+			for(j=0; j < G_poly1->colsize; j++){
+				revert_to_Real(G_poly1->matrix[i][j], &ax2, &ix);
+				non_dup_list[non_dup_count*d+j] = ax2;
 			}
+			non_dup_count ++;
 		}
 	}
-	count = G_poly1->rowsize;
+
 	for (i=0; i < G_poly2->rowsize; i++){
-		for(j=0; j < G_poly2->colsize; j++){
-			if(revert_to_Real(G_poly2->matrix[i][j], &ax, &ix)){
-				dd_set_d(E->matrix[i+count][j], ix);
+		non_duplicate = true;
+		for (n=0; n < non_dup_count; n++){
+			row_diff = false;
+			for(j=0; j < G_poly2->colsize; j++){
+				revert_to_Real(G_poly2->matrix[i][j], &ax2, &ix);
+				if(fabs(non_dup_list[n*d+j]-ax2) > dd_almostzero){
+					row_diff = true;
+					break;
+				}
 			}
-			else{
-				dd_set_d(E->matrix[i+count][j], ax);
+			if(row_diff == false){
+				non_duplicate = false;
+				break;
+			}	
+		}
+		if(non_duplicate){
+			for(j=0; j < G_poly2->colsize; j++){
+				revert_to_Real(G_poly2->matrix[i][j], &ax2, &ix);
+				non_dup_list[non_dup_count*d+j] = ax2;
 			}
+			non_dup_count ++;
 		}
 	}
+
+	// E = dd_CreateMatrix(m,d);
+	E = dd_CreateMatrix(non_dup_count,d);
+	for(i=0; i < non_dup_count; i++){
+		for (j=0; j < d; j++){
+			dd_set_d(E->matrix[i][j], non_dup_list[i*d + j]);
+		}
+	}
+	// for(i=0; i < G_poly1->rowsize; i++){
+	// 	for (j=0; j < G_poly1->colsize; j++){
+	// 		if(revert_to_Real(G_poly1->matrix[i][j], &ax, &ix)){
+	// 			dd_set_d(E->matrix[i][j], ix);
+	// 		}
+	// 		else{
+	// 			dd_set_d(E->matrix[i][j], ax);
+	// 		}
+	// 	}
+	// }
+	// count = G_poly1->rowsize;
+	// for(i=0; i < G_poly2->rowsize; i++){
+	// 	if(duplicate_indicator[i]){
+	// 		for(j=0; j < G_poly2->colsize; j++){
+	// 			if(revert_to_Real(G_poly2->matrix[i][j], &ax, &ix)){
+	// 				dd_set_d(E->matrix[count][j], ix);
+	// 			}
+	// 			else{
+	// 				dd_set_d(E->matrix[count][j], ax);
+	// 			}
+	// 		}
+	// 		count ++;
+	// 	}
+	// }
 	E->representation=dd_Generator;
+	// printf("Union is V-representation:\n");
+	// dd_WriteMatrix(stdout,E);  printf("\n");
 	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
 	handle_cddlib_error(err);
-	// printf("\nInput is V-representation of four polys:\n");
 	G_polyu=dd_CopyInequalities(polyu);
-	// dd_WriteMatrix(stdout,E);  printf("\n");
+	// printf("End processing P_u\n");
 	// dd_WriteMatrix(stdout,G_polyu); printf("\n");
 	dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
 	dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); dd_FreePolyhedra(polyu);
@@ -2611,8 +2835,10 @@ bool multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* elem
 		int out_idx = layer_var_start_idx[numlayers - 1]; int aff_idx = layer_var_start_idx[numlayers - 2];
 		if(multi_count==2){
 			// Compute the constraint of the union of two conditions y_c - y_1 <= 0 U y_c - y_2 <= 0
-			printf("Enter here with coeffs by prima, includes row %d and cols %d\n", rows, cols);
+			// printf("Enter here with coeffs by prima, includes row %d and cols %d\n", rows, cols);
 			dd_MatrixPtr G_polyu = convex_for_2cexs_prima(coeffs, rows, cols);
+			// printf("End cddlib of gmp\n");
+			printf("End cddlib\n");
 			for(a=0; a < G_polyu->rowsize; a++){
 				double bias, coeff1, coeff2, coeff3, coeff4, coeff5, coeff6;
 				revert_to_Real(G_polyu->matrix[a][0], &bias, &ix); revert_to_Real(G_polyu->matrix[a][1], &coeff1, &ix);
@@ -2680,6 +2906,14 @@ bool multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* elem
 			error = GRBgetdblattr(model, "ScenNObjVal", &solved_lb);
 			handle_gurobi_error(error, env);
 			fp->input_inf[i] = -(solved_lb - lp_solving_error);
+			error = GRBgetdblattrarray(model, "ScenNX", 0, fp->num_pixels, fp->input_val); handle_gurobi_error(error, env);
+			clear_conVal_status(man, element);
+			elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
+			if(classified_label != ground_truth_label){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
+				return false;
+			}
 		}
 		error = GRBsetintattr(model, "ModelSense", -1); //maximization
 		handle_gurobi_error(error, env);
@@ -2693,6 +2927,14 @@ bool multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* elem
 			error = GRBgetdblattr(model, "ScenNObjVal", &solved_ub);
 			handle_gurobi_error(error, env);
 			fp->input_sup[i] = solved_ub + lp_solving_error;
+			error = GRBgetdblattrarray(model, "ScenNX", 0, fp->num_pixels, fp->input_val); handle_gurobi_error(error, env);
+			clear_conVal_status(man, element);
+			elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
+			if(classified_label != ground_truth_label){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
+				return false;
+			}
 		}
 		// multiple scenarios of unstable relu nodes
 		error = GRBsetintattr(model, "NumScenarios", 0);
@@ -2753,6 +2995,14 @@ bool multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* elem
 			if(cur_layer->neurons[index_info[i]]->lb<0){
 				relu_refine_count ++;
 			}	
+			error = GRBgetdblattrarray(model, "ScenNX", 0, fp->num_pixels, fp->input_val); handle_gurobi_error(error, env);
+			clear_conVal_status(man, element);
+			elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
+			if(classified_label != ground_truth_label){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
+				return false;
+			}
 		}
 		error = GRBsetintattr(model, "ModelSense", -1); //maximization
 		handle_gurobi_error(error, env);
@@ -2769,6 +3019,14 @@ bool multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* elem
 			cur_layer->neurons[index_info[i]]->ub = fmin(solved_ub + lp_solving_error, cur_layer->neurons[index_info[i]]->ub);
 			if(cur_layer->neurons[index_info[i]]->ub<=0){
 				relu_refine_count ++;
+			}
+			error = GRBgetdblattrarray(model, "ScenNX", 0, fp->num_pixels, fp->input_val); handle_gurobi_error(error, env);
+			clear_conVal_status(man, element);
+			elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
+			if(classified_label != ground_truth_label){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
+				return false;
 			}
 		}
 		free(layer_info); free(index_info);

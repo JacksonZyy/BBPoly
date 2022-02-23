@@ -6,7 +6,7 @@
 build/    # 忽略 build/ 目录下的所有文件
 .libs/
 lib/
-cddlib-0.94j/
+cddlib-0.94m/
 gmp-6.1.2/
 gurobi900/linux64/
 m4-1.4.1/
