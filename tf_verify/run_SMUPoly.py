@@ -354,8 +354,8 @@ for i, test in enumerate(tests):
         else:
             with open(lb_fullpath, 'a+', newline='') as write_obj:
                 csv_writer = csv.writer(write_obj)
-                csv_writer.writerow([net_file, str(dataset), "img "+str(i)+" with label "+str(actual_label), "eps="+str(epsilon), "SMUPoly", str(end - start)+" secs", "fail"])
-            print("image ", i, " fail!")
+                csv_writer.writerow([net_file, str(dataset), "img "+str(i)+" with label "+str(actual_label), "eps="+str(epsilon), "SMUPoly", str(end - start)+" secs", "DK"])
+            print("image ", i, " DK!")
 
 with open(lb_fullpath, 'a+', newline='') as write_obj:
     csv_writer = csv.writer(write_obj)

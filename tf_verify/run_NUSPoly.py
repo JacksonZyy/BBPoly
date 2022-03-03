@@ -311,55 +311,67 @@ net_file = net_name_list[-1]
 specLB = None
 specUB = None
 verified_images = 0
+falsified_images = 0
 candi_count = 0
 overall_time = 0.0
 
 for i, test in enumerate(tests):
-    image= np.float64(test[1:len(test)])/np.float64(255)
-    actual_label= int(test[0])
-    specLB = np.copy(image)
-    specUB = np.copy(image)
-    normalize(specLB, means, stds, dataset)
-    normalize(specUB, means, stds, dataset)
-    eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
-    dominant_class = eran_result[0]
-    if(dominant_class == actual_label):
-        candi_count = candi_count + 1
-        if config.normalized_region==True:
-            specLB = np.clip(image - epsilon,0,1)
-            specUB = np.clip(image + epsilon,0,1)
-            normalize(specLB, means, stds, dataset)
-            normalize(specUB, means, stds, dataset)
-        else:
-            specLB = specLB - epsilon
-            specUB = specUB + epsilon
-            
-        lb_fullpath = "stress_test_result/NUSPoly.csv"
-        # lb_fullpath = "stress_test_result/Deeppoly" + net_file.replace(".", "_") +".csv"
-        # execution with corresponding parameters
-        start = time.time() 
-        # print(config.refine_max_iter)
-        eran_result = eran.AbsRefinement_with_Prima(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, is_refinement=config.is_refinement, REFINE_MAX_ITER=config.refine_max_iter, label=actual_label)
-        # eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, label=actual_label)
-        end = time.time()
-        overall_time = overall_time + end - start
+    if(True):
+        image= np.float64(test[1:len(test)])/np.float64(255)
+        actual_label= int(test[0])
+        specLB = np.copy(image)
+        specUB = np.copy(image)
+        normalize(specLB, means, stds, dataset)
+        normalize(specUB, means, stds, dataset)
+        eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
         dominant_class = eran_result[0]
-        # print(eran_result[2][-1], eran_result[3][-1])
         if(dominant_class == actual_label):
-            verified_images = verified_images + 1
-            with open(lb_fullpath, 'a+', newline='') as write_obj:
-                csv_writer = csv.writer(write_obj)
-                csv_writer.writerow([net_file, str(dataset), "img "+str(i)+" with label "+str(actual_label), "eps="+str(epsilon), "NUSPoly", str(end - start)+" secs", "success"])
-            print("image ", i, " success!")
-        else:
-            with open(lb_fullpath, 'a+', newline='') as write_obj:
-                csv_writer = csv.writer(write_obj)
-                csv_writer.writerow([net_file, str(dataset), "img "+str(i)+" with label "+str(actual_label), "eps="+str(epsilon), "NUSPoly", str(end - start)+" secs", "fail"])
-            print("image ", i, " fail!")
+            candi_count = candi_count + 1
+            if config.normalized_region==True:
+                specLB = np.clip(image - epsilon,0,1)
+                specUB = np.clip(image + epsilon,0,1)
+                normalize(specLB, means, stds, dataset)
+                normalize(specUB, means, stds, dataset)
+            else:
+                specLB = specLB - epsilon
+                specUB = specUB + epsilon
+                
+            lb_fullpath = "stress_test_result/NUSPoly.csv"
+            # lb_fullpath = "stress_test_result/Deeppoly" + net_file.replace(".", "_") +".csv"
+            # execution with corresponding parameters
+            start = time.time() 
+            # print(config.refine_max_iter)
+            eran_result = eran.AbsRefinement_with_Prima(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, is_refinement=config.is_refinement, REFINE_MAX_ITER=config.refine_max_iter, label=actual_label)
+            # eran_result = eran.analyze_box(specLB, specUB, init_domain('deeppoly'), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, config.layer_by_layer, config.is_residual, config.is_blk_segmentation, config.blk_size, config.is_early_terminate, config.early_termi_thre, config.is_sum_def_over_input, label=actual_label)
+            end = time.time()
+            overall_time = overall_time + end - start
+            dominant_class = eran_result[0]
+            cex_flag = eran_result[-1]
+            # print(eran_result[2][-1], eran_result[3][-1])
+            if(dominant_class == actual_label):
+                verified_images = verified_images + 1
+                with open(lb_fullpath, 'a+', newline='') as write_obj:
+                    csv_writer = csv.writer(write_obj)
+                    csv_writer.writerow([net_file, str(dataset), "img "+str(i)+" with label "+str(actual_label), "eps="+str(epsilon), "NUSPoly", str(end - start)+" secs", "success"])
+                print("image ", i, " success!")
+            else:
+                if(cex_flag):
+                    falsified_images = falsified_images + 1
+                    with open(lb_fullpath, 'a+', newline='') as write_obj:
+                        csv_writer = csv.writer(write_obj)
+                        csv_writer.writerow([net_file, str(dataset), "img "+str(i)+" with label "+str(actual_label), "eps="+str(epsilon), "NUSPoly", str(end - start)+" secs", "falsify"])
+                    print("image ", i, " falsify!")
+                else:
+                    with open(lb_fullpath, 'a+', newline='') as write_obj:
+                        csv_writer = csv.writer(write_obj)
+                        csv_writer.writerow([net_file, str(dataset), "img "+str(i)+" with label "+str(actual_label), "eps="+str(epsilon), "NUSPoly", str(end - start)+" secs", "DK"])
+                    print("image ", i, " DK!")
 
 with open(lb_fullpath, 'a+', newline='') as write_obj:
     csv_writer = csv.writer(write_obj)
     csv_writer.writerow(['analysis precision', str(verified_images), '/'+str(candi_count) ])    
+    csv_writer.writerow(['analysis falsification', str(falsified_images), '/'+str(candi_count) ])   
     csv_writer.writerow(['average execution time', str(overall_time/candi_count)])         
 print('analysis precision ',verified_images,'/ ', candi_count)
+print('analysis falsification ',falsified_images,'/ ', candi_count)
 print('average execution time is ',overall_time/candi_count, 's')

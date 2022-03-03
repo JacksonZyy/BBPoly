@@ -29,6 +29,9 @@ from numpy.ctypeslib import ndpointer
 import ctypes
 
 _doublepp = ndpointer(dtype=np.uintp, ndim=1, flags='C')
+
+class ReVal(ctypes.Structure):
+    _fields_ = [("status", ctypes.c_int),("relu_refresh_count", ctypes.c_int)]
 # ====================================================================== #
 # Basics
 # ====================================================================== #
@@ -452,7 +455,7 @@ def label_deviation_lb(man, element, y, x, use_area_heuristic,layer_by_layer, is
         print(inst)
     return res
 
-def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list, spurious_count, MAX_ITER):
+def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list, spurious_count, cur_iter_id):
     """
      To check is this adversarial label poten_cex is spurious or not
     
@@ -477,9 +480,73 @@ def is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_
         is_spurious_c.restype = c_bool
         spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
         is_spurious_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, c_bool, c_bool, c_int, c_bool, ndpointer(c_uint), c_int, c_int]
-        res = is_spurious_c(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list_np, spurious_count, MAX_ITER)
+        res = is_spurious_c(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list_np, spurious_count, cur_iter_id)
     except Exception as inst:
         print('Problem with loading/calling "is_spurious" from "libfppoly.so"')
+        print(inst)
+    return res
+
+def cascade2_is_spurious(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list, spurious_count, cur_iter_id):
+    """
+     To check is this adversarial label poten_cex is spurious or not
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive : c_bool
+        Boolean flag.
+    y : ElinaDim
+        The dimension y in the constraint y-x>0.
+    x: ElinaDim
+	The dimension x in the constraint y-x>0.
+    Returns
+    -------
+    res = boolean
+
+    """
+    res= None
+    try:
+        is_spurious_c = fppoly_api.cascade2_is_spurious
+        is_spurious_c.restype = ReVal
+        spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
+        is_spurious_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, c_bool, c_bool, c_int, c_bool, ndpointer(c_uint), c_int, c_int]
+        res = is_spurious_c(man, element, ground_truth_label, poten_cex, layer_by_layer, is_blk_segmentation, blk_size, is_sum_def_over_input, spurious_list_np, spurious_count, cur_iter_id)
+    except Exception as inst:
+        print('Problem with loading/calling "cascade2_is_spurious" from "libfppoly.so"')
+        print(inst)
+    return res
+
+def cascade1_is_spurious(man, element, ground_truth_label, poten_cex, spurious_list, spurious_count, cur_iter_id, group_num, consNum_each_group, varsid_one_dim, coeffs, prede_ind):
+    """
+     To check is this adversarial label poten_cex is spurious or not, with PRIMA encoding
+    
+    Parameters
+    ----------
+    man : ElinaManagerPtr
+        Pointer to the ElinaManager.
+    destructive : c_bool
+        Boolean flag.
+    y : ElinaDim
+        The dimension y in the constraint y-x>0.
+    x: ElinaDim
+	The dimension x in the constraint y-x>0.
+    Returns
+    -------
+    res = boolean
+
+    """
+    res= None
+    try:
+        is_spurious_c = fppoly_api.cascade1_is_spurious
+        is_spurious_c.restype = ReVal
+        spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
+        consNum_each_group_np = np.ascontiguousarray(consNum_each_group, dtype=np.intc)
+        varsid_one_dim_np = np.ascontiguousarray(varsid_one_dim, dtype=np.intc)
+        is_spurious_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, ndpointer(c_uint), c_int, c_int, c_int, ndpointer(c_int), ndpointer(c_int), ndpointer(ctypes.c_double), c_int]
+        res = is_spurious_c(man, element, ground_truth_label, poten_cex, spurious_list_np, spurious_count, cur_iter_id, group_num, consNum_each_group_np, varsid_one_dim_np, coeffs, prede_ind)
+    except Exception as inst:
+        print('Problem with loading/calling "cascade1_is_spurious" from "libfppoly.so"')
         print(inst)
     return res
 
@@ -525,7 +592,7 @@ def multi_cex_spurious_with_cdd(man, element, ground_truth_label, multi_cex, mul
     res= None
     try:
         multi_cex_spurious_with_cdd_c = fppoly_api.multi_cex_spurious_with_cdd
-        multi_cex_spurious_with_cdd_c.restype = c_bool
+        multi_cex_spurious_with_cdd_c.restype = c_int
         spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
         multi_cex_np = np.ascontiguousarray(multi_cex, dtype=np.uintc)
         multi_cex_spurious_with_cdd_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int]
@@ -546,13 +613,34 @@ def multi_cex_spurious_with_prima(man, element, ground_truth_label, multi_cex, m
     res= None
     try:
         multi_cex_spurious_with_prima_c = fppoly_api.multi_cex_spurious_with_prima
-        multi_cex_spurious_with_prima_c.restype = c_bool
+        multi_cex_spurious_with_prima_c.restype = c_int
         spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
         multi_cex_np = np.ascontiguousarray(multi_cex, dtype=np.uintc)
         multi_cex_spurious_with_prima_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int, ndpointer(ctypes.c_double), c_int, c_int]
         res = multi_cex_spurious_with_prima_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id, coeffs, rows, cols)
     except Exception as inst:
         print('Problem with loading/calling "multi_cex_spurious_with_prima" from "libfppoly.so"')
+        print(inst)
+    return res
+
+def multi_cex_spurious_with_prima_gcactivated(man, element, ground_truth_label, multi_cex, multi_count, spurious_list, spurious_count, cur_iter_id, coeffs, rows, cols):
+    """
+    To check if the multi adversarial labels are spurious or not at the same time
+    Using cdd to compute the disjunction of the convex hulls
+    Returns
+    -------
+    res = boolean
+    """
+    res= None
+    try:
+        multi_cex_spurious_with_prima_c = fppoly_api.multi_cex_spurious_with_prima_gcactivated
+        multi_cex_spurious_with_prima_c.restype = c_int
+        spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
+        multi_cex_np = np.ascontiguousarray(multi_cex, dtype=np.uintc)
+        multi_cex_spurious_with_prima_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int, ndpointer(ctypes.c_double), c_int, c_int]
+        res = multi_cex_spurious_with_prima_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id, coeffs, rows, cols)
+    except Exception as inst:
+        print('Problem with loading/calling "multi_cex_spurious_with_prima_gcactivated" from "libfppoly.so"')
         print(inst)
     return res
 
