@@ -1587,7 +1587,7 @@ re_val cascade2_is_spurious(elina_manager_t* man, elina_abstract0_t* element, el
 	return r;
 }
 
-re_val cascade1_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, int * spurious_list, int spurious_count, int cur_iter_id, int group_num, int * consNum_each_group, int * varsid_one_dim, double * coeffs, int layerno){
+re_val cascade1_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, int * spurious_list, int spurious_count, int cur_iter_id, int num_relu_layers, int * groupNum_each_layer, int group_num, int * consNum_each_group, int * varsid_one_dim, double * coeffs){
 	// firstly consider the default case, where like in SMU paper, to encode all the constraints within the network
 	int count, k;
 	clock_t func_begin = clock();
@@ -1718,22 +1718,32 @@ re_val cascade1_is_spurious(elina_manager_t* man, elina_abstract0_t* element, el
 		}
 	}
 
-	// add constraints from PRIMA, int group_num, int * consNum_each_group, int * varsid_one_dim, double * coeffs, int layerno
-	int cons_count = 0; int aff_start = layer_var_start_idx[layerno]; int relu_start = layer_var_start_idx[layerno+1];
-	for(count = 0; count < group_num; count ++){
-		// printf("for pair %d\n", count);
-		int ind1 = varsid_one_dim[3*count]; int ind2 = varsid_one_dim[3*count+1]; int ind3 = varsid_one_dim[3*count+2]; 
-		for(k = 0; k < consNum_each_group[count]; k++){
-			// start_con index is cons_count, have consNum_each_group[count] in total, each constraint contains 7 values
-			double bias, coeff1, coeff2, coeff3, coeff4, coeff5, coeff6;
-			bias = coeffs[(cons_count+k)*7]; coeff1 = coeffs[(cons_count+k)*7+1]; coeff2 = coeffs[(cons_count+k)*7+2]; coeff3 = coeffs[(cons_count+k)*7+3];
-			coeff4 = coeffs[(cons_count+k)*7 + 4]; coeff5 = coeffs[(cons_count+k)*7 + 5]; coeff6 = coeffs[(cons_count+k)*7 + 6];
-			double values[6] = {coeff1, coeff2, coeff3, coeff4, coeff5, coeff6}; 
-			int indexes[6] = {aff_start+ind1, aff_start+ind2, aff_start+ind3, relu_start+ind1, relu_start+ind2, relu_start+ind3};
-			error = GRBaddconstr(model, 6, indexes, values, GRB_GREATER_EQUAL, -bias, NULL);
-			error = GRBupdatemodel(model); handle_gurobi_error(error, env);
-		} 
-		cons_count += consNum_each_group[count];
+	// add constraints from PRIMA
+	// int num_relu_layers, int* groupNum_each_layer, int group_num, int* consNum_each_group, int* varsid_one_dim, double* coeffs
+	int cons_count = 0; int relu_layer_count = 0; int group_count = 0;
+	for(i=0; i < numlayers; i++){
+		layer_t * cur_layer = fp->layers[i];
+		if(cur_layer->is_activation){
+			int group_num = groupNum_each_layer[relu_layer_count];
+ 			int aff_start = layer_var_start_idx[i-1]; int relu_start = layer_var_start_idx[i];
+			for(count = 0; count < group_num; count ++){
+				// the index of varsid starts from group_count
+				int ind1 = varsid_one_dim[3*(count+group_count)]; int ind2 = varsid_one_dim[3*(count+group_count)+1]; int ind3 = varsid_one_dim[3*(count+group_count)+2]; 
+				for(k = 0; k < consNum_each_group[count+group_count]; k++){
+					// start_con index is cons_count, have consNum_each_group[count] in total, each constraint contains 7 values
+					double bias, coeff1, coeff2, coeff3, coeff4, coeff5, coeff6;
+					bias = coeffs[(cons_count+k)*7]; coeff1 = coeffs[(cons_count+k)*7+1]; coeff2 = coeffs[(cons_count+k)*7+2]; coeff3 = coeffs[(cons_count+k)*7+3];
+					coeff4 = coeffs[(cons_count+k)*7 + 4]; coeff5 = coeffs[(cons_count+k)*7 + 5]; coeff6 = coeffs[(cons_count+k)*7 + 6];
+					double values[6] = {coeff1, coeff2, coeff3, coeff4, coeff5, coeff6}; 
+					int indexes[6] = {aff_start+ind1, aff_start+ind2, aff_start+ind3, relu_start+ind1, relu_start+ind2, relu_start+ind3};
+					error = GRBaddconstr(model, 6, indexes, values, GRB_GREATER_EQUAL, -bias, NULL);
+					error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+				} 
+				cons_count += consNum_each_group[count+group_count];
+			}
+			relu_layer_count ++;
+			group_count += group_num;
+		}
 	}
 
 	// add constraints for previously spurious labels
@@ -1747,15 +1757,27 @@ re_val cascade1_is_spurious(elina_manager_t* man, elina_abstract0_t* element, el
 		handle_gurobi_error(error, env);
 	}
 
+	// checking the current lower bound 
+	// error = GRBsetdblattrelement(model, "Obj", layer_var_start_idx[numlayers - 1]+ground_truth_label, 1.0); handle_gurobi_error(error, env);
+	// error = GRBsetdblattrelement(model, "Obj", layer_var_start_idx[numlayers - 1]+poten_cex, -1.0); handle_gurobi_error(error, env);
+	// error = GRBsetintattr(model, "ModelSense", 1); handle_gurobi_error(error, env); 
+	// error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+	// error = GRBoptimize(model); handle_gurobi_error(error, env);
+	// double solved_lb;
+	// error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &solved_lb); handle_gurobi_error(error, env);
+	// printf("The lower bound of yc - yi is now %.4f\n", solved_lb);
+	// error = GRBsetdblattrelement(model, "Obj", layer_var_start_idx[numlayers - 1]+ground_truth_label, 0.0); handle_gurobi_error(error, env);
+	// error = GRBsetdblattrelement(model, "Obj", layer_var_start_idx[numlayers - 1]+poten_cex, 0.0); handle_gurobi_error(error, env);
+
 	// add constraints regarding the current potential adversarial labels we try to eliminate, out[ground_truth_label] - out[spu_label] <= 0
 	int var_start_idx = layer_var_start_idx[numlayers - 1];
 	int ind[2] = {var_start_idx+ground_truth_label,var_start_idx+poten_cex};
 	double val[2] = {1.0, -1.0};
 	error = GRBaddconstr(model, 2, ind, val, GRB_LESS_EQUAL, 0.0, NULL);
 	// update model
-	error = GRBupdatemodel(model);
-	handle_gurobi_error(error, env);
-
+	error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+	
+	
 	// Simply check the feasibility, without objective function, if infeasible, then successfully prove spurious, return True
 	error = GRBoptimize(model);
 	handle_gurobi_error(error, env);

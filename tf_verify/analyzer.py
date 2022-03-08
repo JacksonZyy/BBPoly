@@ -388,22 +388,16 @@ class Analyzer:
                 return 0, 5
         return 0, itr_count
 
-    def cascade1_label_prune(self, man, element, ground_truth_label, poten_cex, spurious_list, spurious_count, total_num_layer, MAX_ITER=5, layer_by_layer=False, is_blk_segmentation=False, blk_size=0, is_sum_def_over_input=FALSE):
+    def cascade1_label_prune(self, man, element, ground_truth_label, poten_cex, spurious_list, spurious_count, MAX_ITER=5, layer_by_layer=False, is_blk_segmentation=False, blk_size=0, is_sum_def_over_input=FALSE):
         itr_count = 0 
         clear_neurons_status(man, element)
         run_deeppoly(man, element)
-        prede_ind = total_num_layer - 4
-        length = get_num_neurons_in_layer(man, element, prede_ind)
+        
         while(itr_count < MAX_ITER):
+            print(itr_count, MAX_ITER)
             itr_count = itr_count + 1
-            bounds = box_for_layer(self.man, element, prede_ind)
-            # print("The second last layer is ", total_layer_num - 2)
-            itv = [bounds[i] for i in range(length)]
-            nlb = [x.contents.inf.contents.val.dbl for x in itv]
-            nub = [x.contents.sup.contents.val.dbl for x in itv]
-            elina_interval_array_free(bounds,length)
-            group_num, consNum_each_group, varsid_one_dim, coeffs = self.comp_krelu_cons(man, element, prede_ind, length, nlb, nub, 'refinepoly')
-            res = cascade1_is_spurious(man, element, ground_truth_label, poten_cex, spurious_list, spurious_count, itr_count, group_num, consNum_each_group, varsid_one_dim, coeffs, prede_ind)
+            num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, coeffs = self.wholenet_krelu_cons(man, element, self.nn, 'refinepoly')
+            res = cascade1_is_spurious(man, element, ground_truth_label, poten_cex, spurious_list, spurious_count, itr_count, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, coeffs)
             # print("refreshed relu is ", res.relu_refresh_count)
             if(res.status == 1):
                 return 1, itr_count
@@ -411,6 +405,7 @@ class Analyzer:
                 return -1, itr_count
             elif(res.relu_refresh_count == 0):
                 return 0, 5
+        print(0, itr_count)
         return 0, itr_count
 
     def analyze_with_subgraph_encoding(self, ground_truth_label):
@@ -683,8 +678,20 @@ class Analyzer:
                 sorted_adv_labels.append(poten_cex)
             n = 0
             while(n < len(sorted_adv_labels)):
-                # if(last_solve_ite in [4,5]):
-                #     execution_flag, last_solve_ite = self.cascade1_label_prune(self.man, element, ground_truth_label, sorted_adv_labels[n], spurious_list, len(spurious_list), len(nlb), self.MAX_ITER)
+                if(last_solve_ite in [1, 2, 3, 4,5]):
+                    execution_flag, last_solve_ite = self.cascade1_label_prune(self.man, element, ground_truth_label, sorted_adv_labels[n], spurious_list, len(spurious_list), self.MAX_ITER)
+                    if(execution_flag == 1):
+                        spurious_list.append(sorted_adv_labels[n])
+                        potential_adv_count = potential_adv_count - 1
+                        n = n + 1
+                    elif(execution_flag == -1):
+                        cex_flag = True
+                        break    
+                    else:
+                        print("why cannot terminate")
+                        break
+                # elif(last_solve_ite in [3]):
+                #     execution_flag, last_solve_ite = self.cascade2_label_prune(self.man, element, ground_truth_label, sorted_adv_labels[n], spurious_list, len(spurious_list), self.MAX_ITER)
                 #     if(execution_flag == 1):
                 #         spurious_list.append(sorted_adv_labels[n])
                 #         potential_adv_count = potential_adv_count - 1
@@ -694,41 +701,30 @@ class Analyzer:
                 #         break    
                 #     else:
                 #         break
-                if(last_solve_ite in [3,4,5]):
-                    execution_flag, last_solve_ite = self.cascade2_label_prune(self.man, element, ground_truth_label, sorted_adv_labels[n], spurious_list, len(spurious_list), self.MAX_ITER)
-                    if(execution_flag == 1):
-                        spurious_list.append(sorted_adv_labels[n])
-                        potential_adv_count = potential_adv_count - 1
-                        n = n + 1
-                    elif(execution_flag == -1):
-                        cex_flag = True
-                        break    
-                    else:
-                        break
-                else:
-                    if(n+multi_cex_count <= len(sorted_adv_labels)):
-                        # self.prima_calling_test()
-                        execution_flag = self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:n+multi_cex_count], len(nlb), spurious_list)
-                        if(execution_flag == 1):
-                            spurious_list.extend(sorted_adv_labels[n:n+multi_cex_count])
-                            potential_adv_count = potential_adv_count - multi_cex_count
-                            n = n + multi_cex_count
-                        elif(execution_flag == -1):
-                            cex_flag = True
-                            break
-                        else:
-                            break
-                    else:
-                        execution_flag = self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:len(sorted_adv_labels)], len(nlb), spurious_list)
-                        if(execution_flag == 1):
-                            spurious_list.extend(sorted_adv_labels[n:len(sorted_adv_labels)])
-                            potential_adv_count = potential_adv_count - (len(sorted_adv_labels) - n)
-                            n = len(sorted_adv_labels)
-                        elif(execution_flag == -1):
-                            cex_flag = True
-                            break    
-                        else:
-                            break
+                # else:
+                #     if(n+multi_cex_count <= len(sorted_adv_labels)):
+                #         # self.prima_calling_test()
+                #         execution_flag = self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:n+multi_cex_count], len(nlb), spurious_list)
+                #         if(execution_flag == 1):
+                #             spurious_list.extend(sorted_adv_labels[n:n+multi_cex_count])
+                #             potential_adv_count = potential_adv_count - multi_cex_count
+                #             n = n + multi_cex_count
+                #         elif(execution_flag == -1):
+                #             cex_flag = True
+                #             break
+                #         else:
+                #             break
+                #     else:
+                #         execution_flag = self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:len(sorted_adv_labels)], len(nlb), spurious_list)
+                #         if(execution_flag == 1):
+                #             spurious_list.extend(sorted_adv_labels[n:len(sorted_adv_labels)])
+                #             potential_adv_count = potential_adv_count - (len(sorted_adv_labels) - n)
+                #             n = len(sorted_adv_labels)
+                #         elif(execution_flag == -1):
+                #             cex_flag = True
+                #             break    
+                #         else:
+                #             break
 
             if(potential_adv_count == 0):
                 print("Successfully refine the result")
@@ -744,6 +740,7 @@ class Analyzer:
             while(i+2 < grouplen):
                 sparsed_combs.append([i, i+1, i+2])
                 i = i + 2
+        return sparsed_combs
     
     def relu_grouping(self, length, lb, ub, K=3, s=-2):
         assert length == len(lb) == len(ub)
@@ -761,8 +758,9 @@ class Analyzer:
         n_vars_above_cutoff = len(vars_above_cutoff)
 
         kact_args = []
-        while len(vars_above_cutoff) > 0 and config.sparse_n >= K:
+        if len(vars_above_cutoff) > 0 and config.sparse_n >= K:
             grouplen = min(sparse_n, len(vars_above_cutoff))
+            # print(grouplen)
             group = vars_above_cutoff[:grouplen]
             vars_above_cutoff = vars_above_cutoff[grouplen:]
             if grouplen <= K:
@@ -779,11 +777,11 @@ class Analyzer:
         # for var in all_vars:
         #     kact_args.append([var])
 
-        print("krelu: n", config.sparse_n,
-            "split_zero", len(all_vars),
-            "after cutoff", n_vars_above_cutoff,
-            "number of args", len(kact_args))
-
+        # print("krelu: n", config.sparse_n,
+        #     "split_zero", len(all_vars),
+        #     "after cutoff", n_vars_above_cutoff,
+        #     "number of args", len(kact_args))
+        # print("number of args", len(kact_args))
         return kact_args
 
     def comp_krelu_cons(self, man, element, layerno, length, lbi, ubi, domain, K=3, s=-2, approx=True):
@@ -866,7 +864,99 @@ class Analyzer:
         # return with group_num, the number of constriants for each group, the varid for each group, and the coeffs
         print(len(kact_args), len(consNum_each_group), len(varsid_one_dim), total_row, len(np.float64(conv_coeffs)))
         return len(kact_args), consNum_each_group, varsid_one_dim, np.float64(conv_coeffs)
+         
+    def wholenet_krelu_cons(self, man, element, nn, domain, K=3, s=-2, approx=True):
+        groupNum_each_layer = []
+        consNum_each_group = []
+        varsid_one_dim = []
+        conv_coeffs = []
+        total_group_Num = 0
         
+        relu_layer_indexes = [i for i,x in enumerate(nn.layertypes) if x=='ReLU']
+        for i, relu_layer in enumerate(relu_layer_indexes):
+            # get the predecessor layer
+            layerno = relu_layer - 1 
+            length = get_num_neurons_in_layer(man, element, layerno)
+            bounds = box_for_layer(self.man, element, layerno)
+            itv = [bounds[i] for i in range(length)]
+            nlb = [x.contents.inf.contents.val.dbl for x in itv]
+            nub = [x.contents.sup.contents.val.dbl for x in itv]
+            elina_interval_array_free(bounds,length)
+            lbi = np.asarray(nlb, dtype=np.double)
+            ubi = np.asarray(nub, dtype=np.double)
+            kact_args = self.relu_grouping(length, lbi, ubi, K=K, s=s)
+            if(len(kact_args) >= 1):
+                groupNum_each_layer.append(len(kact_args))
+                tdim = ElinaDim(length)
+                KAct.man = man
+                KAct.element = element
+                KAct.tdim = tdim
+                KAct.length = length
+                KAct.layerno = layerno
+                KAct.offset = 0
+                KAct.domain = domain
+                KAct.type = "ReLU"
+                total_size = 0    
+                for varsid in kact_args:
+                    total_group_Num = total_group_Num + 1
+                    varsid_one_dim.extend(varsid)
+                    size = 3**len(varsid) - 1
+                    total_size = total_size + size
+                # print(len(kact_args))
+                linexpr0 = elina_linexpr0_array_alloc(total_size)
+                i = 0
+                for varsid in kact_args:
+                    for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
+                        if all(c == 0 for c in coeffs):
+                            continue
+                        linexpr0[i] = generate_linexpr0(0, varsid, coeffs)
+                        i = i + 1
+                upper_bound = get_upper_bound_for_linexpr0(man,element,linexpr0, total_size, layerno)
+                i=0
+                input_hrep_array = []
+                for varsid in kact_args:
+                    input_hrep = []
+                    for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
+                        if all(c == 0 for c in coeffs):
+                            continue
+                        input_hrep.append([upper_bound[i]] + [-c for c in coeffs])
+                        i = i + 1
+                    input_hrep_array.append(input_hrep)
+
+                with multiprocessing.Pool(config.numproc) as pool:
+                    kact_results = pool.starmap(make_kactivation_obj, zip(input_hrep_array, len(input_hrep_array) * [approx]))
+                
+                gid = 0
+                total_row = 0
+                for inst in kact_results:
+                    varsid = kact_args[gid]
+                    inst.varsid = varsid
+                    gid = gid+1
+                    rows = 0
+                    cols = 2*len(varsid)+1
+                    non_redun_cons = []
+                    for row in inst.cons:
+                        if non_redun_cons == []:
+                            non_redun_cons.append(row)
+                        elif all([any([(abs(element[i]-row[i]) >= 10**-8) for i in range(len(row))]) for element in non_redun_cons]):        
+                            non_redun_cons.append(row)
+                    for row in non_redun_cons:
+                        total_row = total_row + 1
+                        rows = rows + 1
+                        for i in range(cols):
+                            if(abs(row[i])<= 10**-7):
+                                conv_coeffs.append(0.0)
+                            elif(abs(row[i]-1)<= 10**-7):
+                                conv_coeffs.append(1.0)
+                            else:
+                                conv_coeffs.append(row[i])
+                    consNum_each_group.append(rows)
+            else:
+                groupNum_each_layer.append(len(kact_args))
+            
+        print(len(groupNum_each_layer), groupNum_each_layer, total_group_Num, len(consNum_each_group), len(varsid_one_dim), len(np.float64(conv_coeffs)))
+        return len(groupNum_each_layer), groupNum_each_layer, total_group_Num, consNum_each_group, varsid_one_dim, np.float64(conv_coeffs)
+         
     def check_multi_adv_labels(self, element, ground_truth_label, multi_list, total_layer_num, spurious_list):
         # if any stablized node, leave it to cdd to handle it
         itr_count = 0 

@@ -517,7 +517,7 @@ def cascade2_is_spurious(man, element, ground_truth_label, poten_cex, layer_by_l
         print(inst)
     return res
 
-def cascade1_is_spurious(man, element, ground_truth_label, poten_cex, spurious_list, spurious_count, cur_iter_id, group_num, consNum_each_group, varsid_one_dim, coeffs, prede_ind):
+def cascade1_is_spurious(man, element, ground_truth_label, poten_cex, spurious_list, spurious_count, cur_iter_id, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, coeffs):
     """
      To check is this adversarial label poten_cex is spurious or not, with PRIMA encoding
     
@@ -543,8 +543,9 @@ def cascade1_is_spurious(man, element, ground_truth_label, poten_cex, spurious_l
         spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
         consNum_each_group_np = np.ascontiguousarray(consNum_each_group, dtype=np.intc)
         varsid_one_dim_np = np.ascontiguousarray(varsid_one_dim, dtype=np.intc)
-        is_spurious_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, ndpointer(c_uint), c_int, c_int, c_int, ndpointer(c_int), ndpointer(c_int), ndpointer(ctypes.c_double), c_int]
-        res = is_spurious_c(man, element, ground_truth_label, poten_cex, spurious_list_np, spurious_count, cur_iter_id, group_num, consNum_each_group_np, varsid_one_dim_np, coeffs, prede_ind)
+        groupNum_each_layer_np = np.ascontiguousarray(groupNum_each_layer, dtype=np.intc)
+        is_spurious_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ElinaDim, ndpointer(c_uint), c_int, c_int, c_int, ndpointer(c_int), c_int, ndpointer(c_int), ndpointer(c_int), ndpointer(ctypes.c_double)]
+        res = is_spurious_c(man, element, ground_truth_label, poten_cex, spurious_list_np, spurious_count, cur_iter_id, num_relu_layers, groupNum_each_layer_np, group_num, consNum_each_group_np, varsid_one_dim_np, coeffs)
     except Exception as inst:
         print('Problem with loading/calling "cascade1_is_spurious" from "libfppoly.so"')
         print(inst)

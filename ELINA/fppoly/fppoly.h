@@ -205,7 +205,7 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 
 re_val cascade2_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, bool layer_by_layer, bool is_blk_segmentation, int blk_size, bool is_sum_def_over_input, int * spurious_list, int spurious_count, int cur_iter_id);
 
-re_val cascade1_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, int * spurious_list, int spurious_count, int cur_iter_id, int group_num, int * consNum_each_group, int * varsid_one_dim, double * coeffs, int layerno);
+re_val cascade1_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex, int * spurious_list, int spurious_count, int cur_iter_id, int num_relu_layers, int * groupNum_each_layer, int group_num, int * consNum_each_group, int * varsid_one_dim, double * coeffs);
 
 bool multi_cex_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex1, elina_dim_t poten_cex2, int * spurious_list, int spurious_count, int MAX_ITER);
 
