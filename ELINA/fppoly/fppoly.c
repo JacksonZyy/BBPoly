@@ -63,93 +63,6 @@ bool revert_to_Real(mytype x, double * ax, long * ix)
 	}
 }
 
-dd_MatrixPtr convex_computation_for_2advLabels(double gt_lb, double gt_ub, double cex1_lb, double cex1_ub, double cex2_lb, double cex2_ub){
-	dd_PolyhedraPtr poly1, poly2, polyu;
-	dd_MatrixPtr A, E, G_poly1, G_poly2, G_polyu;
-	dd_rowrange m, count; 
-	dd_colrange d;
-	dd_ErrorType err;
-	dd_set_global_constants();  /* First, this must be called to use cddlib. */
-	// The first case where inp, oup are both deactivated
-	// The vars include ground_truth label \in [gt_lb,gt_ub], cex1 \in [cex1_lb,cex1_ub], cex2 \in [cex2_lb,cex2_ub]
-	// printf("The intervals are [%.4f, %.4f], [%.4f, %.4f], [%.4f, %.4f]\n",gt_lb, gt_ub, cex1_lb,cex1_ub, cex2_lb,cex2_ub);
-	m=7; d=4;
-	A=dd_CreateMatrix(m,d);
-	dd_set_d(A->matrix[0][0],-gt_lb); dd_set_d(A->matrix[0][1], 1); dd_set_d(A->matrix[0][2], 0); dd_set_d(A->matrix[0][3], 0);
-	dd_set_d(A->matrix[1][0],gt_ub); dd_set_d(A->matrix[1][1], -1); dd_set_d(A->matrix[1][2], 0); dd_set_d(A->matrix[1][3], 0);
-	dd_set_d(A->matrix[2][0],-cex1_lb); dd_set_d(A->matrix[2][1], 0); dd_set_d(A->matrix[2][2], 1); dd_set_d(A->matrix[2][3], 0);
-	dd_set_d(A->matrix[3][0],cex1_ub); dd_set_d(A->matrix[3][1], 0); dd_set_d(A->matrix[3][2], -1); dd_set_d(A->matrix[3][3], 0);
-	dd_set_d(A->matrix[4][0],-cex2_lb); dd_set_d(A->matrix[4][1], 0); dd_set_d(A->matrix[4][2], 0); dd_set_d(A->matrix[4][3], 1);
-	dd_set_d(A->matrix[5][0],cex2_ub); dd_set_d(A->matrix[5][1], 0); dd_set_d(A->matrix[5][2], 0); dd_set_d(A->matrix[5][3], -1);
-	/*  -gt_lb     +  gc   >= 0
-		gt_ub     -  gc   >= 0
-		-cex1_lb         +  cex1   >= 0   
-		cex1_ub          -  cex1   >= 0  
-		-cex2_lb                      cex2  >= 0
-		cex2_ub					  -cex2   >= 0
-		variable interval constraint
-	*/
-	dd_set_d(A->matrix[6][0],0); dd_set_d(A->matrix[6][1], -1); dd_set_d(A->matrix[6][2], 1); dd_set_d(A->matrix[6][3], 0);
-	/*  gc - cex1 <= 0
-		cex1 - gc >= 0
-		branch condition constraint
-	*/
-	A->representation=dd_Inequality;
-	poly1=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
-	// printf("\nInput1 is H-representation:\n");
-	G_poly1=dd_CopyGenerators(poly1);
-
-	dd_set_d(A->matrix[6][0],0); dd_set_d(A->matrix[6][1], -1); dd_set_d(A->matrix[6][2], 0); dd_set_d(A->matrix[6][3], 1);
-	/*  cex2 - gc >= 0
-		branch condition constraint
-	*/
-	poly2=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
-	// printf("\nInput2 is H-representation:\n");
-	G_poly2=dd_CopyGenerators(poly2);
-
-
-	// Compute the combination of four branches
-	m = G_poly1->rowsize + G_poly2->rowsize;
-	E = dd_CreateMatrix(m,d);
-	long i,j,ix;
-	double ax; 
-	for (i=0; i < G_poly1->rowsize; i++){
-		for (j=0; j < G_poly1->colsize; j++) {
-			if(revert_to_Real(G_poly1->matrix[i][j], &ax, &ix)){
-				dd_set_d(E->matrix[i][j], ix);
-			}
-			else{
-				dd_set_d(E->matrix[i][j], ax);
-			}
-		}
-	}
-	count = G_poly1->rowsize;
-	for (i=0; i < G_poly2->rowsize; i++) {
-		for(j=0; j < G_poly2->colsize; j++){
-			if(revert_to_Real(G_poly2->matrix[i][j], &ax, &ix)){
-				dd_set_d(E->matrix[i+count][j], ix);
-			}
-			else{
-				dd_set_d(E->matrix[i+count][j], ax);
-			}
-		}
-	}
-	E->representation=dd_Generator;
-	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
-	// printf("\nInput is V-representation of four polys:\n");
-	G_polyu=dd_CopyInequalities(polyu);
-	// dd_WriteMatrix(stdout,E);  printf("\n");
-	// dd_WriteMatrix(stdout,G_polyu); printf("\n"); //Check if the number of constraint is 7
-
-	dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
-	dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); dd_FreePolyhedra(polyu);
-	dd_free_global_constants();
-	return G_polyu;
-}
-
 dd_MatrixPtr convex_computation_for_2advLabels_with_inppoly(double gt_lb, double gt_ub, double cex1_lb, double cex1_ub, double cex2_lb, double cex2_ub, double * inp_poly){
 	dd_PolyhedraPtr poly1, poly2, polyu;
 	dd_MatrixPtr A, E, G_poly1, G_poly2, G_polyu;
@@ -196,13 +109,13 @@ dd_MatrixPtr convex_computation_for_2advLabels_with_inppoly(double gt_lb, double
 
 	// Compute the combination of four branches
 	m = G_poly1->rowsize + G_poly2->rowsize;
-	if(m == 0)
-	{
-		dd_FreeMatrix(A); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
-		dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); 
-		dd_free_global_constants();
-		return NULL;
-	}
+	// if(m == 0)
+	// {
+	// 	dd_FreeMatrix(A); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
+	// 	dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); 
+	// 	dd_free_global_constants();
+	// 	return NULL;
+	// }
 	E = dd_CreateMatrix(m,d);
 	for (i=0; i < G_poly1->rowsize; i++){
 		for (j=0; j < G_poly1->colsize; j++) {
@@ -237,90 +150,131 @@ dd_MatrixPtr convex_computation_for_2advLabels_with_inppoly(double gt_lb, double
 	dd_free_global_constants();
 	return G_polyu;
 }
- 
-dd_MatrixPtr convex_computation_for_3advLabels(double gt_lb, double gt_ub, double cex1_lb, double cex1_ub, double cex2_lb, double cex2_ub, double cex3_lb, double cex3_ub){
+
+dd_MatrixPtr convex_computation_for_3advLabels_with_inppoly(double * inp_poly){
 	dd_PolyhedraPtr poly1, poly2, poly3, polyu;
 	dd_MatrixPtr A, E, G_poly1, G_poly2, G_poly3, G_polyu;
-	dd_rowrange m, count; 
+	dd_rowrange m, count, non_dup_count; 
 	dd_colrange d;
 	dd_ErrorType err;
-	dd_set_global_constants();  /* First, this must be called to use cddlib. */
-	// The vars include ground_truth label \in [gt_lb,gt_ub], cex1 \in [cex1_lb,cex1_ub], cex2 \in [cex2_lb,cex2_ub]
-	// printf("The intervals are [%.4f, %.4f], [%.4f, %.4f], [%.4f, %.4f]\n",gt_lb, gt_ub, cex1_lb,cex1_ub, cex2_lb,cex2_ub);
-	m=9; d=5;
+	long i,j,ix, n; double ax; 
+	dd_set_global_constants(); 
+	m=81; d=5;
 	A=dd_CreateMatrix(m,d);
-	dd_set_d(A->matrix[0][0],-gt_lb); dd_set_d(A->matrix[0][1], 1); dd_set_d(A->matrix[0][2], 0); dd_set_d(A->matrix[0][3], 0); dd_set_d(A->matrix[0][4], 0);
-	dd_set_d(A->matrix[1][0],gt_ub); dd_set_d(A->matrix[1][1], -1); dd_set_d(A->matrix[1][2], 0); dd_set_d(A->matrix[1][3], 0); dd_set_d(A->matrix[1][4], 0);
-	dd_set_d(A->matrix[2][0],-cex1_lb); dd_set_d(A->matrix[2][1], 0); dd_set_d(A->matrix[2][2], 1); dd_set_d(A->matrix[2][3], 0); dd_set_d(A->matrix[2][4], 0);
-	dd_set_d(A->matrix[3][0],cex1_ub); dd_set_d(A->matrix[3][1], 0); dd_set_d(A->matrix[3][2], -1); dd_set_d(A->matrix[3][3], 0); dd_set_d(A->matrix[3][4], 0);
-	dd_set_d(A->matrix[4][0],-cex2_lb); dd_set_d(A->matrix[4][1], 0); dd_set_d(A->matrix[4][2], 0); dd_set_d(A->matrix[4][3], 1); dd_set_d(A->matrix[4][4], 0);
-	dd_set_d(A->matrix[5][0],cex2_ub); dd_set_d(A->matrix[5][1], 0); dd_set_d(A->matrix[5][2], 0); dd_set_d(A->matrix[5][3], -1); dd_set_d(A->matrix[5][4], 0);
-	dd_set_d(A->matrix[6][0],-cex3_lb); dd_set_d(A->matrix[6][1], 0); dd_set_d(A->matrix[6][2], 0); dd_set_d(A->matrix[6][3], 0); dd_set_d(A->matrix[6][4], 1);
-	dd_set_d(A->matrix[7][0],cex3_ub); dd_set_d(A->matrix[7][1], 0); dd_set_d(A->matrix[7][2], 0); dd_set_d(A->matrix[7][3], 0); dd_set_d(A->matrix[7][4], -1);
-	/*  -gt_lb     +  gc   >= 0; gt_ub     -  gc   >= 0
-		-cex1_lb   +  cex1   >= 0; cex1_ub   -  cex1   >= 0  
-		-cex2_lb  +  cex2  >= 0; cex2_ub	 -cex2   >= 0
-		-cex3_lb  +  cex3  >= 0; cex3_ub	 -cex3   >= 0
-	*/
-	dd_set_d(A->matrix[8][0],0); dd_set_d(A->matrix[8][1], -1); dd_set_d(A->matrix[8][2], 1); dd_set_d(A->matrix[8][3], 0); dd_set_d(A->matrix[8][4], 0);
-	// cex1 - gc >= 0 branch condition constraint
+	for (i=0; i < m-1; i++){
+		dd_set_d(A->matrix[i][0],inp_poly[i*5]); dd_set_d(A->matrix[i][1], inp_poly[i*5+1]); dd_set_d(A->matrix[i][2], inp_poly[i*5+2]);
+		dd_set_d(A->matrix[i][3], inp_poly[i*5+3]); dd_set_d(A->matrix[i][4], inp_poly[i*5+4]);
+	}
+	dd_set_d(A->matrix[m-1][0],0); dd_set_d(A->matrix[m-1][1], -1); dd_set_d(A->matrix[m-1][2], 1); dd_set_d(A->matrix[m-1][3], 0); dd_set_d(A->matrix[m-1][4], 0);
+	/* cex1 - gc >= 0 */
 	A->representation=dd_Inequality;
 	poly1=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
 	handle_cddlib_error(err);
 	// printf("\nInput1 is H-representation:\n");
 	G_poly1=dd_CopyGenerators(poly1);
 
-	dd_set_d(A->matrix[8][0],0); dd_set_d(A->matrix[8][1], -1); dd_set_d(A->matrix[8][2], 0); dd_set_d(A->matrix[8][3], 1); dd_set_d(A->matrix[8][4], 0);
-	// cex2 - gc >= 0 branch condition constraint
+	dd_set_d(A->matrix[m-1][0],0); dd_set_d(A->matrix[m-1][1], -1); dd_set_d(A->matrix[m-1][2], 0); dd_set_d(A->matrix[m-1][3], 1); dd_set_d(A->matrix[m-1][4], 0);
+	/*  cex2 - gc >= 0 */
 	poly2=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
 	handle_cddlib_error(err);
 	// printf("\nInput2 is H-representation:\n");
 	G_poly2=dd_CopyGenerators(poly2);
 
-	dd_set_d(A->matrix[8][0],0); dd_set_d(A->matrix[8][1], -1); dd_set_d(A->matrix[8][2], 0); dd_set_d(A->matrix[8][3], 0); dd_set_d(A->matrix[8][4], 1);
-	// cex3 - gc >= 0 branch condition constraint
+	dd_set_d(A->matrix[m-1][0],0); dd_set_d(A->matrix[m-1][1], -1); dd_set_d(A->matrix[m-1][2], 0); dd_set_d(A->matrix[m-1][3], 0); dd_set_d(A->matrix[m-1][4], 1);
+	/*  cex3 - gc >= 0	*/
+	A->representation=dd_Inequality;
 	poly3=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
 	handle_cddlib_error(err);
-	// printf("\nInput2 is H-representation:\n");
+	// printf("\nInput1 is H-representation:\n");
 	G_poly3=dd_CopyGenerators(poly3);
 
 	// Compute the combination of four branches
 	m = G_poly1->rowsize + G_poly2->rowsize + G_poly3->rowsize;
-	E = dd_CreateMatrix(m,d);
-	long i,j,ix;
-	double ax; 
+	double * non_dup_list = (double *)malloc(m*d*sizeof(double));
+	non_dup_count = 0;
+	bool row_diff, non_duplicate; 
 	for (i=0; i < G_poly1->rowsize; i++){
-		for (j=0; j < G_poly1->colsize; j++) {
-			if(revert_to_Real(G_poly1->matrix[i][j], &ax, &ix)){
-				dd_set_d(E->matrix[i][j], ix);
+		non_duplicate = true;
+		for (n=0; n < non_dup_count; n++){
+			row_diff = false;
+			for(j=0; j < G_poly1->colsize; j++){
+				revert_to_Real(G_poly1->matrix[i][j], &ax, &ix);
+				if(fabs(non_dup_list[n*d+j]-ax) > dd_almostzero){
+					row_diff = true;
+					break;
+				}
 			}
-			else{
-				dd_set_d(E->matrix[i][j], ax);
+			if(row_diff == false){
+				non_duplicate = false;
+				break;
+			}	
+		}
+		if(non_duplicate){
+			for(j=0; j < G_poly1->colsize; j++){
+				revert_to_Real(G_poly1->matrix[i][j], &ax, &ix);
+				non_dup_list[non_dup_count*d+j] = ax;
 			}
+			non_dup_count ++;
 		}
 	}
-	count = G_poly1->rowsize;
-	for (i=0; i < G_poly2->rowsize; i++) {
-		for(j=0; j < G_poly2->colsize; j++){
-			if(revert_to_Real(G_poly2->matrix[i][j], &ax, &ix)){
-				dd_set_d(E->matrix[i+count][j], ix);
+
+	for (i=0; i < G_poly2->rowsize; i++){
+		non_duplicate = true;
+		for (n=0; n < non_dup_count; n++){
+			row_diff = false;
+			for(j=0; j < G_poly2->colsize; j++){
+				revert_to_Real(G_poly2->matrix[i][j], &ax, &ix);
+				if(fabs(non_dup_list[n*d+j]-ax) > dd_almostzero){
+					row_diff = true;
+					break;
+				}
 			}
-			else{
-				dd_set_d(E->matrix[i+count][j], ax);
+			if(row_diff == false){
+				non_duplicate = false;
+				break;
+			}	
+		}
+		if(non_duplicate){
+			for(j=0; j < G_poly2->colsize; j++){
+				revert_to_Real(G_poly2->matrix[i][j], &ax, &ix);
+				non_dup_list[non_dup_count*d+j] = ax;
 			}
+			non_dup_count ++;
 		}
 	}
-	count += G_poly2->rowsize;
-	for (i=0; i < G_poly3->rowsize; i++) {
-		for(j=0; j < G_poly3->colsize; j++){
-			if(revert_to_Real(G_poly3->matrix[i][j], &ax, &ix)){
-				dd_set_d(E->matrix[i+count][j], ix);
+
+	for (i=0; i < G_poly3->rowsize; i++){
+		non_duplicate = true;
+		for (n=0; n < non_dup_count; n++){
+			row_diff = false;
+			for(j=0; j < G_poly3->colsize; j++){
+				revert_to_Real(G_poly3->matrix[i][j], &ax, &ix);
+				if(fabs(non_dup_list[n*d+j]-ax) > dd_almostzero){
+					row_diff = true;
+					break;
+				}
 			}
-			else{
-				dd_set_d(E->matrix[i+count][j], ax);
+			if(row_diff == false){
+				non_duplicate = false;
+				break;
+			}	
+		}
+		if(non_duplicate){
+			for(j=0; j < G_poly3->colsize; j++){
+				revert_to_Real(G_poly3->matrix[i][j], &ax, &ix);
+				non_dup_list[non_dup_count*d+j] = ax;
 			}
+			non_dup_count ++;
 		}
 	}
+	// E = dd_CreateMatrix(m,d);
+	E = dd_CreateMatrix(non_dup_count,d);
+	for(i=0; i < non_dup_count; i++){
+		for (j=0; j < d; j++){
+			dd_set_d(E->matrix[i][j], non_dup_list[i*d + j]);
+		}
+	}
+	free(non_dup_list);
 	E->representation=dd_Generator;
 	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
 	handle_cddlib_error(err);
@@ -330,6 +284,220 @@ dd_MatrixPtr convex_computation_for_3advLabels(double gt_lb, double gt_ub, doubl
 	// dd_WriteMatrix(stdout,G_polyu); printf("\n"); //Check if the number of constraint is 7
 	dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); dd_FreeMatrix(G_poly3); 
 	dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); dd_FreePolyhedra(poly3); dd_FreePolyhedra(polyu);
+	dd_free_global_constants();
+	return G_polyu;
+}
+
+dd_MatrixPtr convex_computation_for_4advLabels_with_inppoly(double * inp_poly){
+	dd_PolyhedraPtr poly1, poly2, poly3, poly4, polyu;
+	dd_MatrixPtr A, E, G_poly1, G_poly2, G_poly3, G_poly4, G_polyu;
+	dd_rowrange m, count, non_dup_count; 
+	dd_colrange d;
+	dd_ErrorType err;
+	long i,j,ix,n; double ax; 
+	dd_set_global_constants(); 
+	m=243; d=6;
+	A=dd_CreateMatrix(m,d);
+	for (i=0; i < m-1; i++){
+		dd_set_d(A->matrix[i][0],inp_poly[i*6]); dd_set_d(A->matrix[i][1], inp_poly[i*6+1]); dd_set_d(A->matrix[i][2], inp_poly[i*6+2]);
+		dd_set_d(A->matrix[i][3], inp_poly[i*6+3]); dd_set_d(A->matrix[i][4], inp_poly[i*6+4]); dd_set_d(A->matrix[i][5], inp_poly[i*6+5]);
+	}
+	dd_set_d(A->matrix[m-1][0],0); dd_set_d(A->matrix[m-1][1], -1); dd_set_d(A->matrix[m-1][2], 1); dd_set_d(A->matrix[m-1][3], 0); dd_set_d(A->matrix[m-1][4], 0); dd_set_d(A->matrix[m-1][5], 0);
+	/* cex1 - gc >= 0 */
+	A->representation=dd_Inequality;
+	poly1=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
+	handle_cddlib_error(err);
+	// printf("\nInput1 is H-representation:\n");
+	G_poly1=dd_CopyGenerators(poly1);
+
+	dd_set_d(A->matrix[m-1][0],0); dd_set_d(A->matrix[m-1][1], -1); dd_set_d(A->matrix[m-1][2], 0); dd_set_d(A->matrix[m-1][3], 1); dd_set_d(A->matrix[m-1][4], 0); dd_set_d(A->matrix[m-1][5], 0);
+	/*  cex2 - gc >= 0 */
+	poly2=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
+	handle_cddlib_error(err);
+	// printf("\nInput2 is H-representation:\n");
+	G_poly2=dd_CopyGenerators(poly2);
+
+	dd_set_d(A->matrix[m-1][0],0); dd_set_d(A->matrix[m-1][1], -1); dd_set_d(A->matrix[m-1][2], 0); dd_set_d(A->matrix[m-1][3], 0); dd_set_d(A->matrix[m-1][4], 1); dd_set_d(A->matrix[m-1][5], 0);
+	/*  cex3 - gc >= 0	*/
+	A->representation=dd_Inequality;
+	poly3=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
+	handle_cddlib_error(err);
+	// printf("\nInput1 is H-representation:\n");
+	G_poly3=dd_CopyGenerators(poly3);
+
+	dd_set_d(A->matrix[m-1][0],0); dd_set_d(A->matrix[m-1][1], -1); dd_set_d(A->matrix[m-1][2], 0); dd_set_d(A->matrix[m-1][3], 0); dd_set_d(A->matrix[m-1][4], 0); dd_set_d(A->matrix[m-1][5], 1);
+	/*  cex3 - gc >= 0	*/
+	A->representation=dd_Inequality;
+	poly4=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
+	handle_cddlib_error(err);
+	// printf("\nInput1 is H-representation:\n");
+	G_poly4=dd_CopyGenerators(poly4);
+
+	// Compute the combination of four branches
+	// E = dd_CreateMatrix(m,d);
+	// for (i=0; i < G_poly1->rowsize; i++){
+	// 	for (j=0; j < G_poly1->colsize; j++) {
+	// 		if(revert_to_Real(G_poly1->matrix[i][j], &ax, &ix)){
+	// 			dd_set_d(E->matrix[i][j], ix);
+	// 		}
+	// 		else{
+	// 			dd_set_d(E->matrix[i][j], ax);
+	// 		}
+	// 	}
+	// }
+	// count = G_poly1->rowsize;
+	// for (i=0; i < G_poly2->rowsize; i++) {
+	// 	for(j=0; j < G_poly2->colsize; j++){
+	// 		if(revert_to_Real(G_poly2->matrix[i][j], &ax, &ix)){
+	// 			dd_set_d(E->matrix[i+count][j], ix);
+	// 		}
+	// 		else{
+	// 			dd_set_d(E->matrix[i+count][j], ax);
+	// 		}
+	// 	}
+	// }
+	// count += G_poly2->rowsize;
+	// for (i=0; i < G_poly3->rowsize; i++) {
+	// 	for(j=0; j < G_poly3->colsize; j++){
+	// 		if(revert_to_Real(G_poly3->matrix[i][j], &ax, &ix)){
+	// 			dd_set_d(E->matrix[i+count][j], ix);
+	// 		}
+	// 		else{
+	// 			dd_set_d(E->matrix[i+count][j], ax);
+	// 		}
+	// 	}
+	// }
+	// count += G_poly3->rowsize;
+	// for (i=0; i < G_poly4->rowsize; i++) {
+	// 	for(j=0; j < G_poly4->colsize; j++){
+	// 		if(revert_to_Real(G_poly4->matrix[i][j], &ax, &ix)){
+	// 			dd_set_d(E->matrix[i+count][j], ix);
+	// 		}
+	// 		else{
+	// 			dd_set_d(E->matrix[i+count][j], ax);
+	// 		}
+	// 	}
+	// }
+	m = G_poly1->rowsize + G_poly2->rowsize + G_poly3->rowsize + G_poly4->rowsize;
+	double * non_dup_list = (double *)malloc(m*d*sizeof(double));
+	non_dup_count = 0;
+	bool row_diff, non_duplicate; 
+	for (i=0; i < G_poly1->rowsize; i++){
+		non_duplicate = true;
+		for (n=0; n < non_dup_count; n++){
+			row_diff = false;
+			for(j=0; j < G_poly1->colsize; j++){
+				revert_to_Real(G_poly1->matrix[i][j], &ax, &ix);
+				if(fabs(non_dup_list[n*d+j]-ax) > dd_almostzero){
+					row_diff = true;
+					break;
+				}
+			}
+			if(row_diff == false){
+				non_duplicate = false;
+				break;
+			}	
+		}
+		if(non_duplicate){
+			for(j=0; j < G_poly1->colsize; j++){
+				revert_to_Real(G_poly1->matrix[i][j], &ax, &ix);
+				non_dup_list[non_dup_count*d+j] = ax;
+			}
+			non_dup_count ++;
+		}
+	}
+
+	for (i=0; i < G_poly2->rowsize; i++){
+		non_duplicate = true;
+		for (n=0; n < non_dup_count; n++){
+			row_diff = false;
+			for(j=0; j < G_poly2->colsize; j++){
+				revert_to_Real(G_poly2->matrix[i][j], &ax, &ix);
+				if(fabs(non_dup_list[n*d+j]-ax) > dd_almostzero){
+					row_diff = true;
+					break;
+				}
+			}
+			if(row_diff == false){
+				non_duplicate = false;
+				break;
+			}	
+		}
+		if(non_duplicate){
+			for(j=0; j < G_poly2->colsize; j++){
+				revert_to_Real(G_poly2->matrix[i][j], &ax, &ix);
+				non_dup_list[non_dup_count*d+j] = ax;
+			}
+			non_dup_count ++;
+		}
+	}
+
+	for (i=0; i < G_poly3->rowsize; i++){
+		non_duplicate = true;
+		for (n=0; n < non_dup_count; n++){
+			row_diff = false;
+			for(j=0; j < G_poly3->colsize; j++){
+				revert_to_Real(G_poly3->matrix[i][j], &ax, &ix);
+				if(fabs(non_dup_list[n*d+j]-ax) > dd_almostzero){
+					row_diff = true;
+					break;
+				}
+			}
+			if(row_diff == false){
+				non_duplicate = false;
+				break;
+			}	
+		}
+		if(non_duplicate){
+			for(j=0; j < G_poly3->colsize; j++){
+				revert_to_Real(G_poly3->matrix[i][j], &ax, &ix);
+				non_dup_list[non_dup_count*d+j] = ax;
+			}
+			non_dup_count ++;
+		}
+	}
+	
+	for (i=0; i < G_poly4->rowsize; i++){
+		non_duplicate = true;
+		for (n=0; n < non_dup_count; n++){
+			row_diff = false;
+			for(j=0; j < G_poly4->colsize; j++){
+				revert_to_Real(G_poly4->matrix[i][j], &ax, &ix);
+				if(fabs(non_dup_list[n*d+j]-ax) > dd_almostzero){
+					row_diff = true;
+					break;
+				}
+			}
+			if(row_diff == false){
+				non_duplicate = false;
+				break;
+			}	
+		}
+		if(non_duplicate){
+			for(j=0; j < G_poly4->colsize; j++){
+				revert_to_Real(G_poly4->matrix[i][j], &ax, &ix);
+				non_dup_list[non_dup_count*d+j] = ax;
+			}
+			non_dup_count ++;
+		}
+	}
+	// E = dd_CreateMatrix(m,d);
+	E = dd_CreateMatrix(non_dup_count,d);
+	for(i=0; i < non_dup_count; i++){
+		for (j=0; j < d; j++){
+			dd_set_d(E->matrix[i][j], non_dup_list[i*d + j]);
+		}
+	}
+	free(non_dup_list);
+	E->representation=dd_Generator;
+	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
+	handle_cddlib_error(err);
+	// printf("\nInput is V-representation of four polys:\n");
+	G_polyu=dd_CopyInequalities(polyu);
+	// dd_WriteMatrix(stdout,E);  printf("\n");
+	// dd_WriteMatrix(stdout,G_polyu); printf("\n"); //Check if the number of constraint is 7
+	dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); dd_FreeMatrix(G_poly3); dd_FreeMatrix(G_poly4); 
+	dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); dd_FreePolyhedra(poly3); dd_FreePolyhedra(poly4); dd_FreePolyhedra(polyu);
 	dd_free_global_constants();
 	return G_polyu;
 }
@@ -1450,6 +1618,9 @@ re_val cascade2_is_spurious(elina_manager_t* man, elina_abstract0_t* element, el
 		clear_conVal_status(man, element);
 		elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
 		if(classified_label != ground_truth_label){
+			for(k=0; k < fp->num_pixels; k++){
+				printf("pixel %d is %.8f\n", k, fp->input_val[k]);
+			}
 			GRBfreemodel(model); GRBfreeenv(env);
 			printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
 			r.status = -1; r.relu_refresh_count = relu_refine_count;
@@ -1472,6 +1643,9 @@ re_val cascade2_is_spurious(elina_manager_t* man, elina_abstract0_t* element, el
 		clear_conVal_status(man, element);
 		elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
 		if(classified_label != ground_truth_label){
+			for(k=0; k < fp->num_pixels; k++){
+				printf("pixel %d is %.8f\n", k, fp->input_val[k]);
+			}
 			GRBfreemodel(model); GRBfreeenv(env);
 			printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
 			r.status = -1; r.relu_refresh_count = relu_refine_count;
@@ -1545,6 +1719,9 @@ re_val cascade2_is_spurious(elina_manager_t* man, elina_abstract0_t* element, el
 		clear_conVal_status(man, element);
 		elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
 		if(classified_label != ground_truth_label){
+			for(k=0; k < fp->num_pixels; k++){
+				printf("pixel %d is %.8f\n", k, fp->input_val[k]);
+			}
 			GRBfreemodel(model); GRBfreeenv(env);
 			printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
 			r.status = -1; r.relu_refresh_count = relu_refine_count;
@@ -1572,6 +1749,9 @@ re_val cascade2_is_spurious(elina_manager_t* man, elina_abstract0_t* element, el
 		clear_conVal_status(man, element);
 		elina_dim_t classified_label = run_concrete_img_deeppoly(man, element);
 		if(classified_label != ground_truth_label){
+			for(k=0; k < fp->num_pixels; k++){
+				printf("pixel %d is %.8f\n", k, fp->input_val[k]);
+			}
 			GRBfreemodel(model); GRBfreeenv(env);
 			printf("Indeed find a counterexample!!!!!!!!! with adversarial label %zu\n", classified_label);
 			r.status = -1; r.relu_refresh_count = relu_refine_count;
@@ -1959,408 +2139,6 @@ re_val cascade1_is_spurious(elina_manager_t* man, elina_abstract0_t* element, el
 	return r;
 }
 
-expr_t * property_constraint_generator(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t cex, int substitute_step){
-	fppoly_t *fp = fppoly_of_abstract0(element);
-	fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
-	expr_t * sub = (expr_t *)malloc(sizeof(expr_t));
-	//sub->size = size;
-	sub->inf_cst = 0; sub->sup_cst = 0;
-	sub->inf_coeff = (double*)malloc(2*sizeof(double)); sub->sup_coeff = (double*)malloc(2*sizeof(double));
-	sub->dim =(size_t *)malloc(2*sizeof(size_t));
-	sub->size = 2;	sub->type = SPARSE;
-	sub->inf_coeff[0] = -1; sub->sup_coeff[0] = 1; sub->dim[0] = cex;
-	sub->inf_coeff[1] = 1; sub->sup_coeff[1] = -1; sub->dim[1] = ground_truth_label;
-	double ub = INFINITY;
-	int k, count = 0;
-	expr_t * backsubstituted_uexpr = copy_expr(sub);
-	// printf("The auxilinary neuron is %zu - %zu\n", y, x);
-	k = fp->numlayers - 1;
-	while (k >= -1 && count < substitute_step)
-	{
-		// Already defined over k, after calling, replace over k - 1
-		double cur_ub = get_ub_using_prev_layer(man, fp, &backsubstituted_uexpr, k, false);
-		count ++;
-		ub = fmin(ub, cur_ub);
-		if (k < 0)
-			break;
-		k = fp->layers[k]->predecessors[0] - 1;
-	}
-	if(sub){
-		free_expr(sub);
-		sub = NULL;
-	}
-	return backsubstituted_uexpr;
-}
-
-bool multi_cex_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex1, elina_dim_t poten_cex2, int * spurious_list, int spurious_count, int MAX_ITER){
-	// firstly consider the default case, where like in SMU paper, to encode all the constraints within the network
-	// Testing the number of constraints of G_polyu
-	// dd_MatrixPtr G_polyu = convex_computation_for_2advLabels(-3, 4, -1, 2, -2, 3);
-	// dd_WriteMatrix(stdout,G_polyu); printf("\n");
-	// dd_FreeMatrix(G_polyu);
-	// double var_lbs[3] = {-3, -1, -2}; double var_ubs[3] = {4, 2, 3};
-	// double coeff1[3] = {-1, 1, 0}; double coeff2[3] = {-1, 0, 1};
-	// G_polyu = convex_computation_for_2advLabels_deeplayers(var_lbs, var_ubs, coeff1, coeff2, 0, 0, 3);
-	// dd_WriteMatrix(stdout,G_polyu); printf("\n");
-	// dd_FreeMatrix(G_polyu);
-	// return false;
-	// End of testing
-	int count, k;  long a, ix;
-	clock_t func_begin = clock();
-	size_t i, j, n;
-	fppoly_t *fp = fppoly_of_abstract0(element);
-    size_t numlayers = fp->numlayers;
-	double ulp = ldexpl(1.0,-52);
-	int optimstatus;
-	printf("The ground truth label is %zu, pruning labels are %zu and %zu\n", ground_truth_label, poten_cex1, poten_cex2);
-	for(i=0; i < fp->num_pixels; i++){
-		// set the input neurons back to the original input space
-		fp->input_inf[i] = fp->original_input_inf[i];
-		fp->input_sup[i] = fp->original_input_sup[i];
-	}
-	clear_neurons_status(man, element);
-	// Refine for MAX_ITER times
-	for(count = 0; count < MAX_ITER; count++){
-		run_deeppoly(man, element);
-		printf("Refinement (multi-scenario solving) iteration %d\n", count+1);
-		/* Create environment */
-  		GRBenv *env   = NULL;
-  		GRBmodel *model = NULL;
-		int error = 0;	
-		error = GRBemptyenv(&env);
-		handle_gurobi_error(error, env);
-		error = GRBsetintparam(env, "OutputFlag", 0);
-		handle_gurobi_error(error, env);
-		error = GRBstartenv(env);
-		handle_gurobi_error(error, env);
-		/* Create an empty model */
-		error = GRBnewmodel(env, &model, "refinement_solver", 0, NULL, NULL, NULL, NULL, NULL);
-		handle_gurobi_error(error, env);
-		// The index starter for variables at different layers
-		int layer_var_start_idx[numlayers];
-		// fp->input_inf[i], fp->input_sup[i], add the input layer constraints
-		layer_var_start_idx[0] = fp->num_pixels;
-		for(i=0; i < fp->num_pixels; i++){
-			error = GRBaddvar(model, 0, NULL, NULL, 0.0, -fp->input_inf[i], fp->input_sup[i], GRB_CONTINUOUS, NULL);
-        	handle_gurobi_error(error, env);
-		}
-		// add constaints for each hidden and output layer
-		for(i=0; i < numlayers; i++){
-			layer_t * cur_layer = fp->layers[i];
-			neuron_t ** cur_neurons = cur_layer->neurons;
-			size_t num_cur_neurons = cur_layer->dims;
-			if(i+1 < numlayers){
-				// Set up the variable start index 
-				layer_var_start_idx[i+1] = layer_var_start_idx[i] + num_cur_neurons;
-			}
-			int defined_var_start_idx;
-			if(i==0){
-				defined_var_start_idx = 0;
-			}
-			else{
-				defined_var_start_idx = layer_var_start_idx[i-1];
-			}
-
-			if(cur_layer->is_activation){
-				//current layer is ReLU layer, we add the constraints according to RELU behavior
-				for(j=0; j < num_cur_neurons; j++){
-					// add constraints for each ReLU node
-					// need to handle non-stable (two lower constraints will be added) and stable constraint
-					neuron_t * relu_node = cur_neurons[j];
-					if(relu_node->ub == 0.0){
-						// stable unactivated relu nodes
-						expr_t * relu_expr = relu_node->lexpr;
-						assert(relu_expr->type==SPARSE);
-						error = GRBaddvar(model, 0, NULL, NULL, 0.0, -relu_node->lb, relu_node->ub, GRB_CONTINUOUS, NULL);
-						handle_gurobi_error(error, env);
-					}
-					else if(relu_node->lb<0.0){
-						// stable activated relu nodes
-						expr_t * relu_expr = relu_node->lexpr;
-						size_t num_pre_neurons = relu_expr->size;
-						assert(relu_expr->type==SPARSE);
-						assert(num_pre_neurons==1);
-						error = GRBaddvar(model, 0, NULL, NULL, 0.0, -relu_node->lb, relu_node->ub, GRB_CONTINUOUS, NULL);
-						handle_gurobi_error(error, env);
-						int ind[2] = {layer_var_start_idx[i] + j, defined_var_start_idx + j};
-						double val[2] = {-1.0 , relu_expr->sup_coeff[0]};
-						error = GRBaddconstr(model, 2, ind, val, GRB_EQUAL, relu_expr->inf_cst, NULL);
-						handle_gurobi_error(error, env);
-					}
-					else{
-						// unstable relu nodes, add two lower constarints, and also handle FP error for upper constraint
-						expr_t * relu_expr = relu_node->uexpr;
-						size_t num_pre_neurons = relu_expr->size;
-						assert(relu_expr->type==SPARSE);
-						assert(num_pre_neurons==1);
-						// The lower bound setting already indicate that relu >=0
-						error = GRBaddvar(model, 0, NULL, NULL, 0.0, -relu_node->lb, relu_node->ub, GRB_CONTINUOUS, NULL);
-						handle_gurobi_error(error, env);
-						int ind[2] = {layer_var_start_idx[i] + j, defined_var_start_idx + j};
-						double val[2] = {-1.0 , 1.0};
-						// add lower bound, y >= x, -y+x <= 0
-						error = GRBaddconstr(model, 2, ind, val, GRB_LESS_EQUAL, 0.0, NULL);
-						handle_gurobi_error(error, env);
-						int ind2[2] = {layer_var_start_idx[i] + j, defined_var_start_idx + j};
-						double over_slope = relu_expr->sup_coeff[0]+ ulp;
-						double val2[2] = {-1.0, over_slope};
-						int pre = cur_layer->predecessors[0]-1;
-						double in_lb = fp->layers[pre]->neurons[j]->lb;
-						assert(in_lb>=0);
-						double over_b = (fabs(in_lb)+ulp)*over_slope + ulp;
-						// add upper bound, y <= ax+b, -y+ax >= -b
-						error = GRBaddconstr(model, 2, ind2, val2, GRB_GREATER_EQUAL, -over_b, NULL);
-						handle_gurobi_error(error, env);
-					}
-					// update model
-					error = GRBupdatemodel(model);
-					handle_gurobi_error(error, env);
-				}
-			}
-			else{
-				// current layer is affine layer
-				for(j=0; j < num_cur_neurons; j++){
-					neuron_t * affine_node = cur_neurons[j];
-					expr_t * affine_expr = affine_node->lexpr;
-					size_t num_pre_neurons = affine_expr->size;
-					assert(affine_expr->type==DENSE);
-					error = GRBaddvar(model, 0, NULL, NULL, 0.0, -affine_node->lb, affine_node->ub, GRB_CONTINUOUS, NULL);
-					handle_gurobi_error(error, env);
-					int ind[num_pre_neurons+1];
-  					double val[num_pre_neurons+1];
-					for(n=0; n < num_pre_neurons; n++){
-						ind[n] = defined_var_start_idx + n;
-						val[n] = affine_expr->sup_coeff[n];
-					}
-					ind[num_pre_neurons] = layer_var_start_idx[i] + j;
-					val[num_pre_neurons] = -1.0;
-					error = GRBaddconstr(model, num_pre_neurons+1, ind, val, GRB_EQUAL, affine_expr->inf_cst, NULL);
-					handle_gurobi_error(error, env);
-					// update model
-					error = GRBupdatemodel(model);
-					handle_gurobi_error(error, env);
-				}
-			}
-		}
-
-		// add constraints for previously spurious labels
-		for(k=0; k < spurious_count; k++){
-			int spu_label = spurious_list[k];
-			// we have out[ground_truth_label] - out[spu_label] > 0, for practical concern, we expand to >=
-			int var_start_idx = layer_var_start_idx[numlayers - 1];
-			int ind[2] = {var_start_idx+ground_truth_label,var_start_idx+spu_label};
-			double val[2] = {1.0, -1.0};
-			error = GRBaddconstr(model, 2, ind, val, GRB_GREATER_EQUAL, 0.0, NULL);
-			handle_gurobi_error(error, env);
-		}
-
-		// add constraints regarding the current potential adversarial labels we try to eliminate, out[ground_truth_label] - out[spu_label] <= 0
-		if(poten_cex2 == ground_truth_label){
-			int var_start_idx = layer_var_start_idx[numlayers - 1];
-			int ind[2] = {var_start_idx+ground_truth_label,var_start_idx+poten_cex1};
-			double val[2] = {1.0, -1.0};
-			error = GRBaddconstr(model, 2, ind, val, GRB_LESS_EQUAL, 0.0, NULL);
-			error = GRBupdatemodel(model); handle_gurobi_error(error, env);		
-		}
-		else{
-			// Compute the constraint of the union of two conditions y_c - y_1 <= 0 U y_c - y_2 <= 0
-			layer_t * output_layer = fp->layers[numlayers-1];  neuron_t ** out_nodes = output_layer->neurons;
-			int var_start_idx = layer_var_start_idx[numlayers - 1];
-			if((-out_nodes[ground_truth_label]->lb > out_nodes[poten_cex1]->ub) && (-out_nodes[ground_truth_label]->lb > out_nodes[poten_cex2]->ub)){
-				GRBfreemodel(model);
-				GRBfreeenv(env);
-				printf("Refine succesfully at %d-th iteration\n", count+1);
-				return true; 
-			}
-			else if(-out_nodes[ground_truth_label]->lb > out_nodes[poten_cex1]->ub){
-				// convex hull doesn't exist for cex1
-				int ind[2] = {var_start_idx+ground_truth_label,var_start_idx+poten_cex2};
-				double val[2] = {1.0, -1.0};
-				error = GRBaddconstr(model, 2, ind, val, GRB_LESS_EQUAL, 0.0, NULL);
-				error = GRBupdatemodel(model); handle_gurobi_error(error, env);	
-			}
-			else if(-out_nodes[ground_truth_label]->lb > out_nodes[poten_cex2]->ub){
-				// convex hull doesn't exist for cex2
-				int ind[2] = {var_start_idx+ground_truth_label,var_start_idx+poten_cex1};
-				double val[2] = {1.0, -1.0};
-				error = GRBaddconstr(model, 2, ind, val, GRB_LESS_EQUAL, 0.0, NULL);
-				error = GRBupdatemodel(model); handle_gurobi_error(error, env);	
-			}
-			else{
-				// Actually have two labels to be considered ATST, revert this constraint back to some specific layer then do the convex approximation
-				dd_MatrixPtr G_polyu = convex_computation_for_2advLabels(-out_nodes[ground_truth_label]->lb, out_nodes[ground_truth_label]->ub, -out_nodes[poten_cex1]->lb, out_nodes[poten_cex1]->ub, -out_nodes[poten_cex2]->lb, out_nodes[poten_cex2]->ub);
-				for(a=0; a < G_polyu->rowsize; a++){
-					double bias, coeff1, coeff2, coeff3;
-					revert_to_Real(G_polyu->matrix[a][0], &bias, &ix); revert_to_Real(G_polyu->matrix[a][1], &coeff1, &ix);
-					revert_to_Real(G_polyu->matrix[a][2], &coeff2, &ix); revert_to_Real(G_polyu->matrix[a][3], &coeff3, &ix);
-					double values[3] = {coeff1, coeff2, coeff3}; 
-					int indexes[3] = {var_start_idx+ground_truth_label, var_start_idx+poten_cex1, var_start_idx+poten_cex2};
-					error = GRBaddconstr(model, 3, indexes, values, GRB_GREATER_EQUAL, -bias, NULL);
-					// update model
-					error = GRBupdatemodel(model); handle_gurobi_error(error, env);
-				}
-				dd_FreeMatrix(G_polyu);
-			}
-		}
-		
-		// Simply check the feasibility, without objective function, if infeasible, then successfully prove spurious, return True
-		error = GRBoptimize(model);
-		handle_gurobi_error(error, env);
-		/* Capture solution information */
-		error = GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
-		handle_gurobi_error(error, env);
-		if(optimstatus == GRB_INFEASIBLE){
-			GRBfreemodel(model);
-			GRBfreeenv(env);
-			clock_t func_end = clock();
-			double func_spent = (double)(func_end - func_begin) / CLOCKS_PER_SEC;
-			printf("Refine succesfully at %d-th iteration, total time is %f\n", count+1, func_spent);
-			return true;
-		}
-		
-		// If feasible, transfer this current model (all constraints and objective function to be 0) to be Multiple Scenarios
-		// So that one call can handle all scenario solving
-		error = GRBsetintattr(model, "NumScenarios", fp->num_pixels);
-		handle_gurobi_error(error, env);
-		error = GRBupdatemodel(model);
-		handle_gurobi_error(error, env);
-		for(i=0; i < fp->num_pixels; i++){
-			error = GRBsetintparam(GRBgetenv(model), "ScenarioNumber", i);
-			handle_gurobi_error(error, GRBgetenv(model));
-			error = GRBsetdblattrelement(model, "ScenNObj", i, 1.0);
-			handle_gurobi_error(error, env);
-			error = GRBupdatemodel(model);
-			handle_gurobi_error(error, env);
-		}
-		error = GRBsetintattr(model, "ModelSense", 1); //minimization
-		handle_gurobi_error(error, env);
-		error = GRBupdatemodel(model);
-		handle_gurobi_error(error, env);
-		error = GRBoptimize(model);
-		handle_gurobi_error(error, env);
-		double solved_lb, solved_ub;
-		double lp_solving_error = pow(10.0, -6.0) + ulp;
-		for(i=0; i < fp->num_pixels; i++){
-			error = GRBsetintparam(GRBgetenv(model), "ScenarioNumber", i);
-			handle_gurobi_error(error, GRBgetenv(model));
-			error = GRBgetdblattr(model, "ScenNObjVal", &solved_lb);
-			handle_gurobi_error(error, env);
-			// printf("The start layer neuron %zu originally has lower bound %.4f, solved_lb is %.4f\n", i, -fp->input_inf[i], solved_lb);
-			fp->input_inf[i] = -(solved_lb - lp_solving_error);
-		}
-		error = GRBsetintattr(model, "ModelSense", -1); //maximization
-		handle_gurobi_error(error, env);
-		error = GRBupdatemodel(model);
-		handle_gurobi_error(error, env);
-		error = GRBoptimize(model);
-		handle_gurobi_error(error, env);
-		for(i=0; i < fp->num_pixels; i++){
-			error = GRBsetintparam(GRBgetenv(model), "ScenarioNumber", i);
-			handle_gurobi_error(error, GRBgetenv(model));
-			error = GRBgetdblattr(model, "ScenNObjVal", &solved_ub);
-			handle_gurobi_error(error, env);
-			fp->input_sup[i] = solved_ub + lp_solving_error;
-		}
-		
-		// multiple scenarios of unstable relu nodes
-		error = GRBsetintattr(model, "NumScenarios", 0);
-		handle_gurobi_error(error, env);
-		error = GRBupdatemodel(model);
-		handle_gurobi_error(error, env);
-		int counter = 0;
-		int unstable_relu_count = 0;
-		int relu_refine_count = 0; 
-		// count unstable relu number to create scenarios
-		for(i=0; i < numlayers; i++){
-			layer_t * cur_layer = fp->layers[i];
-			if(!cur_layer->is_activation && (i < numlayers-1) && fp->layers[i+1]->is_activation){
-				layer_t * next_layer = fp->layers[i+1];
-				neuron_t ** relu_neurons = next_layer->neurons;
-				for(j=0; j < cur_layer->dims; j++){
-					if(relu_neurons[j]->ub!=0.0 && relu_neurons[j]->lb>=0){
-						unstable_relu_count ++;
-					}
-				}
-			}
-		}
-		// printf("The number of unstable neuron is %d\n", unstable_relu_count);
-		error = GRBsetintattr(model, "NumScenarios", unstable_relu_count);
-		handle_gurobi_error(error, env);
-		int * layer_info = (int *)malloc(unstable_relu_count*sizeof(int));
-		int * index_info = (int *)malloc(unstable_relu_count*sizeof(int));
-		for(i=0; i < numlayers; i++){
-			layer_t * cur_layer = fp->layers[i];
-			if(!cur_layer->is_activation && (i < numlayers-1) && fp->layers[i+1]->is_activation){
-				layer_t * next_layer = fp->layers[i+1];
-				neuron_t ** relu_neurons = next_layer->neurons;
-				for(j=0; j < cur_layer->dims; j++){
-					if(relu_neurons[j]->ub!=0.0 && relu_neurons[j]->lb>=0){
-						error = GRBsetintparam(GRBgetenv(model), "ScenarioNumber", counter);
-						handle_gurobi_error(error, GRBgetenv(model));
-						error = GRBsetdblattrelement(model, "ScenNObj", layer_var_start_idx[i]+j, 1.0);
-						handle_gurobi_error(error, env);
-						// printf("The recored unstable relu info are %d, %zu, %zu\n", counter, i, j);
-						layer_info[counter] = i;
-						index_info[counter] = j;
-						counter ++;
-					}
-				}
-			}
-		}
-		error = GRBsetintattr(model, "ModelSense", 1); //minimization
-		handle_gurobi_error(error, env);
-		error = GRBupdatemodel(model);
-		handle_gurobi_error(error, env);
-		error = GRBoptimize(model);
-		handle_gurobi_error(error, env);
-		for(i=0; i < unstable_relu_count; i++){
-			layer_t * cur_layer = fp->layers[layer_info[i]];
-			error = GRBsetintparam(GRBgetenv(model), "ScenarioNumber", i);
-			handle_gurobi_error(error, GRBgetenv(model));
-			error = GRBgetdblattr(model, "ScenNObjVal", &solved_lb);
-			handle_gurobi_error(error, env);
-			cur_layer->neurons[index_info[i]]->lb = fmin(-(solved_lb - lp_solving_error), cur_layer->neurons[index_info[i]]->lb);
-			if(cur_layer->neurons[index_info[i]]->lb<0){
-				// printf("The refreshed pos Relu is layer %zu, index %zu\n",layer_info[i], index_info[i]);
-				relu_refine_count ++;
-			}	
-		}
-		error = GRBsetintattr(model, "ModelSense", -1); //maximization
-		handle_gurobi_error(error, env);
-		error = GRBupdatemodel(model);
-		handle_gurobi_error(error, env);
-		error = GRBoptimize(model);
-		handle_gurobi_error(error, env);
-		for(i=0; i < unstable_relu_count; i++){
-			layer_t * cur_layer = fp->layers[layer_info[i]];
-			error = GRBsetintparam(GRBgetenv(model), "ScenarioNumber", i);
-			handle_gurobi_error(error, GRBgetenv(model));
-			error = GRBgetdblattr(model, "ScenNObjVal", &solved_ub);
-			handle_gurobi_error(error, env);
-			cur_layer->neurons[index_info[i]]->ub = fmin(solved_ub + lp_solving_error, cur_layer->neurons[index_info[i]]->ub);
-			if(cur_layer->neurons[index_info[i]]->ub<=0){
-				// printf("The refreshed neg Relu is layer %zu, index %zu\n",layer_info[i], index_info[i]);
-				relu_refine_count ++;
-			}
-		}
-		
-		printf("Refreshed ReLU nodes: %d\n",relu_refine_count);
-		free(layer_info);
-		free(index_info);
-		/* Free model */
-  		GRBfreemodel(model);
-  		/* Free environment */
-  		GRBfreeenv(env);
-	}
-	if(optimstatus == GRB_OPTIMAL){
-		printf("Need to do adversarial example finding or quantitative robustness\n");
-	}
-	clock_t func_end = clock();
-	double func_spent = (double)(func_end - func_begin) / CLOCKS_PER_SEC;
-	printf("fail refinement, # total iteration is %d,total time is %f\n", count+1, func_spent);
-	return false;
-}
-
 void * compute_3relu_inputpoly(elina_manager_t* man, elina_abstract0_t* element, double * inp_poly, elina_dim_t gc, elina_dim_t cex1, elina_dim_t cex2){
 	double coeff_list[3] = {-1.0, 0.0, 1.0}; int i,j,k;
 	int size = 26; int count = 0;
@@ -2388,7 +2166,6 @@ void * compute_3relu_inputpoly(elina_manager_t* man, elina_abstract0_t* element,
 					sub->dim[1] = cex1;
 					sub->inf_coeff[2] = -inp_poly[count*4 + 3]; sub->sup_coeff[2] = inp_poly[count*4 + 3];
 					sub->dim[2] = cex2;
-					int k;
 					double lb = get_lb_using_previous_layers(man, fp, &sub, fp->numlayers, false, false, false, 0, false, false, false, false);
 					inp_poly[count*4] = lb;
 					// printf("coeff %.4f, %.4f, %.4f with lb %.4f\n", inp_poly[count*4 + 1], inp_poly[count*4 + 2], inp_poly[count*4 + 3], -lb);
@@ -2406,9 +2183,112 @@ void * compute_3relu_inputpoly(elina_manager_t* man, elina_abstract0_t* element,
 	return NULL;
 }
 
-int multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id){
-	assert(multi_count<=3 && multi_count>=1);
-	int k, optimstatus;  long a, ix; int relu_refine_count = 0; 
+void * compute_4relu_inputpoly(elina_manager_t* man, elina_abstract0_t* element, double * inp_poly, elina_dim_t gc, elina_dim_t cex1, elina_dim_t cex2, elina_dim_t cex3){
+	double coeff_list[3] = {-1.0, 0.0, 1.0}; int i,j,k,n;
+	int size = 80; int count = 0;
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+	// double inp_poly[size*4]; 
+	for(i = 0; i < 3; i++){
+		for(j = 0; j < 3; j++){
+			for(k = 0; k < 3; k++){
+				for(n = 0; n < 3; n++){
+					if(coeff_list[i]!=0 || coeff_list[j]!=0 || coeff_list[k]!=0 || coeff_list[n]!=0){
+						inp_poly[count*5 + 1] = coeff_list[i];
+						inp_poly[count*5 + 2] = coeff_list[j];
+						inp_poly[count*5 + 3] = coeff_list[k];
+						inp_poly[count*5 + 4] = coeff_list[n];
+						expr_t * sub = (expr_t *)malloc(sizeof(expr_t));
+						sub->inf_cst = 0;
+						sub->sup_cst = 0;
+						sub->inf_coeff = (double*)malloc(4*sizeof(double));
+						sub->sup_coeff = (double*)malloc(4*sizeof(double));
+						sub->dim =(size_t *)malloc(4*sizeof(size_t));
+						sub->size = 4;
+						sub->type = SPARSE;
+						sub->inf_coeff[0] = -inp_poly[count*5 + 1]; sub->sup_coeff[0] = inp_poly[count*5 + 1];
+						sub->dim[0] = gc;
+						sub->inf_coeff[1] = -inp_poly[count*5 + 2]; sub->sup_coeff[1] = inp_poly[count*5 + 2];
+						sub->dim[1] = cex1;
+						sub->inf_coeff[2] = -inp_poly[count*5 + 3]; sub->sup_coeff[2] = inp_poly[count*5 + 3];
+						sub->dim[2] = cex2;
+						sub->inf_coeff[3] = -inp_poly[count*5 + 4]; sub->sup_coeff[3] = inp_poly[count*5 + 4];
+						sub->dim[3] = cex3;
+						double lb = get_lb_using_previous_layers(man, fp, &sub, fp->numlayers, false, false, false, 0, false, false, false, false);
+						inp_poly[count*5] = lb;
+						// printf("coeff %.4f, %.4f, %.4f with lb %.4f\n", inp_poly[count*4 + 1], inp_poly[count*4 + 2], inp_poly[count*4 + 3], -lb);
+						if(sub){
+							free_expr(sub);
+							sub = NULL;
+						}
+						count++;
+					}
+				}
+			}
+		}
+	}
+	// printf("Enter here\n");
+	assert(count == size);
+	return NULL;
+}
+
+void * compute_5relu_inputpoly(elina_manager_t* man, elina_abstract0_t* element, double * inp_poly, elina_dim_t gc, elina_dim_t cex1, elina_dim_t cex2, elina_dim_t cex3, elina_dim_t cex4){
+	double coeff_list[3] = {-1.0, 0.0, 1.0}; int i,j,k,n,m;
+	int size = 242; int count = 0;
+	fppoly_t *fp = fppoly_of_abstract0(element);
+	fppoly_internal_t * pr = fppoly_init_from_manager(man,ELINA_FUNID_ASSIGN_LINEXPR_ARRAY);
+	// double inp_poly[size*4]; 
+	for(i = 0; i < 3; i++){
+		for(j = 0; j < 3; j++){
+			for(k = 0; k < 3; k++){
+				for(n = 0; n < 3; n++){
+					for(m = 0; m < 3; m++){
+						if(coeff_list[i]!=0 || coeff_list[j]!=0 || coeff_list[k]!=0 || coeff_list[n]!=0 || coeff_list[m]!=0){
+							inp_poly[count*6 + 1] = coeff_list[i];
+							inp_poly[count*6 + 2] = coeff_list[j];
+							inp_poly[count*6 + 3] = coeff_list[k];
+							inp_poly[count*6 + 4] = coeff_list[n];
+							inp_poly[count*6 + 5] = coeff_list[m];
+							expr_t * sub = (expr_t *)malloc(sizeof(expr_t));
+							sub->inf_cst = 0;
+							sub->sup_cst = 0;
+							sub->inf_coeff = (double*)malloc(5*sizeof(double));
+							sub->sup_coeff = (double*)malloc(5*sizeof(double));
+							sub->dim =(size_t *)malloc(5*sizeof(size_t));
+							sub->size = 5;
+							sub->type = SPARSE;
+							sub->inf_coeff[0] = -inp_poly[count*6 + 1]; sub->sup_coeff[0] = inp_poly[count*6 + 1];
+							sub->dim[0] = gc;
+							sub->inf_coeff[1] = -inp_poly[count*6 + 2]; sub->sup_coeff[1] = inp_poly[count*6 + 2];
+							sub->dim[1] = cex1;
+							sub->inf_coeff[2] = -inp_poly[count*6 + 3]; sub->sup_coeff[2] = inp_poly[count*6 + 3];
+							sub->dim[2] = cex2;
+							sub->inf_coeff[3] = -inp_poly[count*6 + 4]; sub->sup_coeff[3] = inp_poly[count*6 + 4];
+							sub->dim[3] = cex3;
+							sub->inf_coeff[4] = -inp_poly[count*6 + 5]; sub->sup_coeff[4] = inp_poly[count*6 + 5];
+							sub->dim[4] = cex4;
+							double lb = get_lb_using_previous_layers(man, fp, &sub, fp->numlayers, false, false, false, 0, false, false, false, false);
+							inp_poly[count*6] = lb;
+							// printf("coeff %.4f, %.4f, %.4f with lb %.4f\n", inp_poly[count*4 + 1], inp_poly[count*4 + 2], inp_poly[count*4 + 3], -lb);
+							if(sub){
+								free_expr(sub);
+								sub = NULL;
+							}
+							count++;
+						}
+					}
+				}
+			}
+		}
+	}
+	// printf("Enter here\n");
+	assert(count == size);
+	return NULL;
+}
+
+int multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id, int num_relu_layers, int * groupNum_each_layer, int group_num, int * consNum_each_group, int * varsid_one_dim, double * krelu_coeffs){
+	assert(multi_count<=4 && multi_count>=1);
+	int k, optimstatus, count;  long a, ix; int relu_refine_count = 0; 
 	clock_t func_begin = clock();
 	size_t i, j, n; int fea_count = 0;
 	fppoly_t *fp = fppoly_of_abstract0(element);
@@ -2541,6 +2421,34 @@ int multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element
 		}
 	}
 
+	// add constraints from PRIMA
+	// int num_relu_layers, int* groupNum_each_layer, int group_num, int* consNum_each_group, int* varsid_one_dim, double* krelu_coeffs
+	int cons_count = 0; int relu_layer_count = 0; int group_count = 0;
+	for(i=0; i < numlayers; i++){
+		layer_t * cur_layer = fp->layers[i];
+		if(cur_layer->is_activation){
+			int group_num = groupNum_each_layer[relu_layer_count];
+ 			int aff_start = layer_var_start_idx[i-1]; int relu_start = layer_var_start_idx[i];
+			for(count = 0; count < group_num; count ++){
+				// the index of varsid starts from group_count
+				int ind1 = varsid_one_dim[3*(count+group_count)]; int ind2 = varsid_one_dim[3*(count+group_count)+1]; int ind3 = varsid_one_dim[3*(count+group_count)+2]; 
+				for(k = 0; k < consNum_each_group[count+group_count]; k++){
+					// start_con index is cons_count, have consNum_each_group[count] in total, each constraint contains 7 values
+					double bias, coeff1, coeff2, coeff3, coeff4, coeff5, coeff6;
+					bias = krelu_coeffs[(cons_count+k)*7]; coeff1 = krelu_coeffs[(cons_count+k)*7+1]; coeff2 = krelu_coeffs[(cons_count+k)*7+2]; coeff3 = krelu_coeffs[(cons_count+k)*7+3];
+					coeff4 = krelu_coeffs[(cons_count+k)*7 + 4]; coeff5 = krelu_coeffs[(cons_count+k)*7 + 5]; coeff6 = krelu_coeffs[(cons_count+k)*7 + 6];
+					double values[6] = {coeff1, coeff2, coeff3, coeff4, coeff5, coeff6}; 
+					int indexes[6] = {aff_start+ind1, aff_start+ind2, aff_start+ind3, relu_start+ind1, relu_start+ind2, relu_start+ind3};
+					error = GRBaddconstr(model, 6, indexes, values, GRB_GREATER_EQUAL, -bias, NULL);
+					error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+				} 
+				cons_count += consNum_each_group[count+group_count];
+			}
+			relu_layer_count ++;
+			group_count += group_num;
+		}
+	}
+
 	// add constraints for previously spurious labels
 	for(k=0; k < spurious_count; k++){
 		int spu_label = spurious_list[k];
@@ -2554,10 +2462,23 @@ int multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element
 
 	// add constraints regarding the current potential adversarial labels we try to eliminate, out[ground_truth_label] - out[spu_label] <= 0
 	layer_t * output_layer = fp->layers[numlayers-1];  neuron_t ** out_nodes = output_layer->neurons;
-	elina_dim_t fea_idx_list[3]; int var_start_idx = layer_var_start_idx[numlayers - 1];
+	elina_dim_t fea_idx_list[4]; int var_start_idx = layer_var_start_idx[numlayers - 1];
 	if(multi_count>=1){ //assuming we have adversarial labels to check
 		for(k=0; k < multi_count; k++){
-			if(-out_nodes[ground_truth_label]->lb <= out_nodes[multi_cex[k]]->ub){
+			expr_t * sub = (expr_t *)malloc(sizeof(expr_t));
+			sub->inf_cst = 0; sub->sup_cst = 0;
+			sub->inf_coeff = (double*)malloc(2*sizeof(double));
+			sub->sup_coeff = (double*)malloc(2*sizeof(double));
+			sub->dim =(size_t *)malloc(2*sizeof(size_t));
+			sub->size = 2; sub->type = SPARSE;
+			sub->inf_coeff[0] = -1; sub->sup_coeff[0] = 1; sub->dim[0] = ground_truth_label;
+			sub->inf_coeff[1] = 1; sub->sup_coeff[1] = -1; sub->dim[1] = multi_cex[k];
+			double new_lb = get_lb_using_previous_layers(man, fp, &sub, fp->numlayers, false, false, false, 0, false, false, false, false);
+			if(sub){
+				free_expr(sub); sub = NULL;
+			}
+			if(new_lb >= 0){
+				// If new_lb < 0, already means that this cex is infeasible 
 				fea_idx_list[fea_count] = multi_cex[k]; fea_count ++;
 			}
 		}
@@ -2578,8 +2499,8 @@ int multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element
 			dd_MatrixPtr G_polyu = convex_computation_for_2advLabels_with_inppoly(-out_nodes[ground_truth_label]->lb, out_nodes[ground_truth_label]->ub, -out_nodes[fea_idx_list[0]]->lb, out_nodes[fea_idx_list[0]]->ub, -out_nodes[fea_idx_list[1]]->lb, out_nodes[fea_idx_list[1]]->ub, inp_poly);
 			if(G_polyu == NULL){
 				GRBfreemodel(model); GRBfreeenv(env);
-				printf("Refine succesfully at %d-th iteration\n", cur_iter_id);
-				return 1;
+				printf("CDD error at %d-th iteration\n", cur_iter_id);
+				return -2;
 			}
 			for(a=0; a < G_polyu->rowsize; a++){
 				double bias, coeff1, coeff2, coeff3;
@@ -2593,7 +2514,14 @@ int multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element
 			}
 			dd_FreeMatrix(G_polyu);
 		}else if(fea_count == 3){
-			dd_MatrixPtr G_polyu = convex_computation_for_3advLabels(-out_nodes[ground_truth_label]->lb, out_nodes[ground_truth_label]->ub, -out_nodes[fea_idx_list[0]]->lb, out_nodes[fea_idx_list[0]]->ub, -out_nodes[fea_idx_list[1]]->lb, out_nodes[fea_idx_list[1]]->ub, -out_nodes[fea_idx_list[2]]->lb, out_nodes[fea_idx_list[2]]->ub);
+			int size = 80; double inp_poly[size*5]; 
+			compute_4relu_inputpoly(man, element, inp_poly, ground_truth_label, fea_idx_list[0], fea_idx_list[1], fea_idx_list[2]);
+			dd_MatrixPtr G_polyu = convex_computation_for_3advLabels_with_inppoly(inp_poly);
+			if(G_polyu == NULL){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("CDD error at %d-th iteration\n", cur_iter_id);
+				return -2;
+			}
 			for(a=0; a < G_polyu->rowsize; a++){
 				double bias, coeff1, coeff2, coeff3, coeff4;
 				revert_to_Real(G_polyu->matrix[a][0], &bias, &ix); revert_to_Real(G_polyu->matrix[a][1], &coeff1, &ix);
@@ -2605,7 +2533,28 @@ int multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element
 				error = GRBupdatemodel(model); handle_gurobi_error(error, env);
 			}
 			dd_FreeMatrix(G_polyu);
-		}else{
+		}else if(fea_count == 4){
+			int size = 242; double inp_poly[size*6]; 
+			compute_5relu_inputpoly(man, element, inp_poly, ground_truth_label, fea_idx_list[0], fea_idx_list[1], fea_idx_list[2], fea_idx_list[3]);
+			dd_MatrixPtr G_polyu = convex_computation_for_4advLabels_with_inppoly(inp_poly);
+			if(G_polyu == NULL){
+				GRBfreemodel(model); GRBfreeenv(env);
+				printf("CDD error at %d-th iteration\n", cur_iter_id);
+				return -2;
+			}
+			for(a=0; a < G_polyu->rowsize; a++){
+				double bias, coeff1, coeff2, coeff3, coeff4, coeff5;
+				revert_to_Real(G_polyu->matrix[a][0], &bias, &ix); revert_to_Real(G_polyu->matrix[a][1], &coeff1, &ix); revert_to_Real(G_polyu->matrix[a][2], &coeff2, &ix);
+				revert_to_Real(G_polyu->matrix[a][3], &coeff3, &ix); revert_to_Real(G_polyu->matrix[a][4], &coeff4, &ix); revert_to_Real(G_polyu->matrix[a][5], &coeff5, &ix);
+				double values[5] = {coeff1, coeff2, coeff3, coeff4, coeff5}; 
+				int indexes[5] = {var_start_idx+ground_truth_label, var_start_idx+fea_idx_list[0], var_start_idx+fea_idx_list[1], var_start_idx+fea_idx_list[2], var_start_idx+fea_idx_list[3]};
+				error = GRBaddconstr(model, 5, indexes, values, GRB_GREATER_EQUAL, -bias, NULL);
+				// update model
+				error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+			}
+			dd_FreeMatrix(G_polyu);
+		}
+		else{
 			printf("Error warning!!!!!!!!!!!!!!!!!!!! No more than 3 adversarial labels at the same time\n"); 
 			GRBfreemodel(model); GRBfreeenv(env); return 0;
 		}	
@@ -2806,29 +2755,41 @@ dd_MatrixPtr convex_for_3cexs_prima(double * coeffs, int rows, int cols){
 	dd_set_d(A->matrix[rows][5], -1); dd_set_d(A->matrix[rows][6], 1); dd_set_d(A->matrix[rows][7], 0); dd_set_d(A->matrix[rows][8], 0); 
 	//  cex1 - gc >= 0, branch condition constraint
 	A->representation=dd_Inequality;
-	printf("\nInput1 is H-representation:\n");
+	// printf("\nInput1 is H-representation:\n");
 	poly1=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
+	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A); dd_free_global_constants();
+		return NULL;
+	}
 	G_poly1=dd_CopyGenerators(poly1);
-	dd_WriteMatrix(stdout,G_poly1); printf("\n");
+	// dd_WriteMatrix(stdout,G_poly1); printf("\n");
 
 	dd_set_d(A->matrix[rows][0],0); dd_set_d(A->matrix[rows][1], 0); dd_set_d(A->matrix[rows][2], 0); dd_set_d(A->matrix[rows][3], 0); dd_set_d(A->matrix[rows][4], 0);
 	dd_set_d(A->matrix[rows][5], -1); dd_set_d(A->matrix[rows][6], 0); dd_set_d(A->matrix[rows][7], 1); dd_set_d(A->matrix[rows][8], 0); 
 	//  cex2 - gc >= 0, branch condition constraint
-	printf("\nInput2 is H-representation:\n");
+	// printf("\nInput2 is H-representation:\n");
 	poly2=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
+	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A);  dd_FreeMatrix(G_poly1); dd_FreePolyhedra(poly1); 
+		dd_free_global_constants();
+		return NULL;
+	}
 	G_poly2=dd_CopyGenerators(poly2);
-	dd_WriteMatrix(stdout,G_poly2); printf("\n");
+	// dd_WriteMatrix(stdout,G_poly2); printf("\n");
 
 	dd_set_d(A->matrix[rows][0],0); dd_set_d(A->matrix[rows][1], 0); dd_set_d(A->matrix[rows][2], 0); dd_set_d(A->matrix[rows][3], 0); dd_set_d(A->matrix[rows][4], 0);
 	dd_set_d(A->matrix[rows][5], -1); dd_set_d(A->matrix[rows][6], 0); dd_set_d(A->matrix[rows][7], 0); dd_set_d(A->matrix[rows][8], 1); 
 	//  cex3 - gc >= 0, branch condition constraint
-	printf("\nInput3 is H-representation:\n");
+	// printf("\nInput3 is H-representation:\n");
 	poly3=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
+	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A);  dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
+		dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2);
+		dd_free_global_constants();
+		return NULL;
+	}
 	G_poly3=dd_CopyGenerators(poly3);
-	dd_WriteMatrix(stdout,G_poly3); printf("\n");
+	// dd_WriteMatrix(stdout,G_poly3); printf("\n");
 
 	// Compute the combination of four branches
 	m = G_poly1->rowsize + G_poly2->rowsize + G_poly3->rowsize;
@@ -2918,6 +2879,9 @@ dd_MatrixPtr convex_for_3cexs_prima(double * coeffs, int rows, int cols){
 	free(non_dup_list);
 	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
 	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); dd_FreeMatrix(G_poly3); 
+		dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2); dd_FreePolyhedra(poly3); 
+		dd_free_global_constants();
 		return NULL;
 	}
 	// printf("\nInput is V-representation of four polys:\n");
@@ -3034,35 +2998,14 @@ dd_MatrixPtr convex_for_2cexs_prima(double * coeffs, int rows, int cols){
 		}
 	}
 	free(non_dup_list);
-	// for(i=0; i < G_poly1->rowsize; i++){
-	// 	for (j=0; j < G_poly1->colsize; j++){
-	// 		if(revert_to_Real(G_poly1->matrix[i][j], &ax, &ix)){
-	// 			dd_set_d(E->matrix[i][j], ix);
-	// 		}
-	// 		else{
-	// 			dd_set_d(E->matrix[i][j], ax);
-	// 		}
-	// 	}
-	// }
-	// count = G_poly1->rowsize;
-	// for(i=0; i < G_poly2->rowsize; i++){
-	// 	if(duplicate_indicator[i]){
-	// 		for(j=0; j < G_poly2->colsize; j++){
-	// 			if(revert_to_Real(G_poly2->matrix[i][j], &ax, &ix)){
-	// 				dd_set_d(E->matrix[count][j], ix);
-	// 			}
-	// 			else{
-	// 				dd_set_d(E->matrix[count][j], ax);
-	// 			}
-	// 		}
-	// 		count ++;
-	// 	}
-	// }
 	E->representation=dd_Generator;
 	// printf("Union is V-representation:\n");
 	// dd_WriteMatrix(stdout,E);  printf("\n");
 	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
 	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
+		dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2);
+		dd_free_global_constants();
 		return NULL;
 	}
 	G_polyu=dd_CopyInequalities(polyu);
@@ -3109,7 +3052,11 @@ dd_MatrixPtr convex_for_2cexs_prima_gcactivated(double * coeffs, int rows, int c
 	//  cex1 - gc >= 0, branch condition constraint
 	A->representation=dd_Inequality;
 	poly1=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
+	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A);  
+		dd_free_global_constants();
+		return NULL;
+	}
 	// printf("Input1 is H-representation:\n");
 	G_poly1=dd_CopyGenerators(poly1); handle_cddlib_error(err);
 	// printf("End processing P1\n");
@@ -3118,7 +3065,11 @@ dd_MatrixPtr convex_for_2cexs_prima_gcactivated(double * coeffs, int rows, int c
 	dd_set_d(A->matrix[m-1][4],-1); dd_set_d(A->matrix[m-1][5], 0); dd_set_d(A->matrix[m-1][6], 1); 
 	//  cex2 - gc >= 0, branch condition constraint
 	poly2=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
+	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A); dd_FreeMatrix(G_poly1); dd_FreePolyhedra(poly1);
+		dd_free_global_constants();
+		return NULL;
+	}
 	// printf("Input2 is H-representation:\n");
 	G_poly2=dd_CopyGenerators(poly2); handle_cddlib_error(err);
 	// printf("End processing P2\n");
@@ -3192,6 +3143,9 @@ dd_MatrixPtr convex_for_2cexs_prima_gcactivated(double * coeffs, int rows, int c
 	// dd_WriteMatrix(stdout,E);  printf("\n");
 	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
 	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
+		dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2);
+		dd_free_global_constants();
 		return NULL;
 	}
 	G_polyu=dd_CopyInequalities(polyu);
@@ -3238,7 +3192,10 @@ dd_MatrixPtr convex_for_3cexs_prima_gcactivated(double * coeffs, int rows, int c
 	//  cex1 - gc >= 0, branch condition constraint
 	A->representation=dd_Inequality;
 	poly1=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
+	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A); dd_free_global_constants();
+		return NULL;
+	}
 	// printf("Input1 is H-representation:\n");
 	G_poly1=dd_CopyGenerators(poly1); handle_cddlib_error(err);
 	// printf("End processing P1\n");
@@ -3247,7 +3204,11 @@ dd_MatrixPtr convex_for_3cexs_prima_gcactivated(double * coeffs, int rows, int c
 	dd_set_d(A->matrix[m-1][5], -1); dd_set_d(A->matrix[m-1][6], 0); dd_set_d(A->matrix[m-1][7], 1); dd_set_d(A->matrix[m-1][8], 0); 
 	//  cex2 - gc >= 0, branch condition constraint
 	poly2=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
+	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A);  dd_FreeMatrix(G_poly1); dd_FreePolyhedra(poly1);
+		dd_free_global_constants();
+		return NULL;
+	}
 	// printf("Input2 is H-representation:\n");
 	G_poly2=dd_CopyGenerators(poly2); handle_cddlib_error(err);
 	// printf("End processing P2\n");
@@ -3256,7 +3217,12 @@ dd_MatrixPtr convex_for_3cexs_prima_gcactivated(double * coeffs, int rows, int c
 	dd_set_d(A->matrix[m-1][5], -1); dd_set_d(A->matrix[m-1][6], 0); dd_set_d(A->matrix[m-1][7], 0); dd_set_d(A->matrix[m-1][8], 1); 
 	//  cex3 - gc >= 0, branch condition constraint
 	poly3=dd_DDMatrix2Poly(A, &err);  /* compute the second (generator) representation */
-	handle_cddlib_error(err);
+	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A);  dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); 
+		dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2);
+		dd_free_global_constants();
+		return NULL;
+	}
 	// printf("Input2 is H-representation:\n");
 	G_poly3=dd_CopyGenerators(poly3); handle_cddlib_error(err);
 	// printf("End processing P2\n");
@@ -3355,6 +3321,9 @@ dd_MatrixPtr convex_for_3cexs_prima_gcactivated(double * coeffs, int rows, int c
 	// dd_WriteMatrix(stdout,E);  printf("\n");
 	polyu=dd_DDMatrix2Poly(E, &err);  /* compute the second (generator) representation */
 	if(handle_cddlib_error(err)){
+		dd_FreeMatrix(A); dd_FreeMatrix(E); dd_FreeMatrix(G_poly1); dd_FreeMatrix(G_poly2); dd_FreeMatrix(G_poly3); 
+		dd_FreePolyhedra(poly1); dd_FreePolyhedra(poly2);  dd_FreePolyhedra(poly3);
+		dd_free_global_constants();
 		return NULL;
 	}
 	G_polyu=dd_CopyInequalities(polyu);
@@ -3366,10 +3335,10 @@ dd_MatrixPtr convex_for_3cexs_prima_gcactivated(double * coeffs, int rows, int c
 	return G_polyu;
 }
 
-int multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id, double * coeffs, int rows, int cols){
+int multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id, double * coeffs, int rows, int cols, int num_relu_layers, int * groupNum_each_layer, int group_num, int * consNum_each_group, int * varsid_one_dim, double * krelu_coeffs){
 	assert(cols == 2*(multi_count+1)+1);
 	assert(multi_count<=3);
-	int k, optimstatus;  long a, ix; int relu_refine_count = 0; 
+	int k, optimstatus, count;  long a, ix; int relu_refine_count = 0; 
 	size_t i, j, n;
 	fppoly_t *fp = fppoly_of_abstract0(element);
     size_t numlayers = fp->numlayers;
@@ -3499,6 +3468,35 @@ int multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* eleme
 			}
 		}
 	}
+	
+	// add constraints from PRIMA
+	// int num_relu_layers, int* groupNum_each_layer, int group_num, int* consNum_each_group, int* varsid_one_dim, double* krelu_coeffs
+	int cons_count = 0; int relu_layer_count = 0; int group_count = 0;
+	for(i=0; i < numlayers; i++){
+		layer_t * cur_layer = fp->layers[i];
+		if(cur_layer->is_activation){
+			int group_num = groupNum_each_layer[relu_layer_count];
+ 			int aff_start = layer_var_start_idx[i-1]; int relu_start = layer_var_start_idx[i];
+			for(count = 0; count < group_num; count ++){
+				// the index of varsid starts from group_count
+				int ind1 = varsid_one_dim[3*(count+group_count)]; int ind2 = varsid_one_dim[3*(count+group_count)+1]; int ind3 = varsid_one_dim[3*(count+group_count)+2]; 
+				for(k = 0; k < consNum_each_group[count+group_count]; k++){
+					// start_con index is cons_count, have consNum_each_group[count] in total, each constraint contains 7 values
+					double bias, coeff1, coeff2, coeff3, coeff4, coeff5, coeff6;
+					bias = krelu_coeffs[(cons_count+k)*7]; coeff1 = krelu_coeffs[(cons_count+k)*7+1]; coeff2 = krelu_coeffs[(cons_count+k)*7+2]; coeff3 = krelu_coeffs[(cons_count+k)*7+3];
+					coeff4 = krelu_coeffs[(cons_count+k)*7 + 4]; coeff5 = krelu_coeffs[(cons_count+k)*7 + 5]; coeff6 = krelu_coeffs[(cons_count+k)*7 + 6];
+					double values[6] = {coeff1, coeff2, coeff3, coeff4, coeff5, coeff6}; 
+					int indexes[6] = {aff_start+ind1, aff_start+ind2, aff_start+ind3, relu_start+ind1, relu_start+ind2, relu_start+ind3};
+					error = GRBaddconstr(model, 6, indexes, values, GRB_GREATER_EQUAL, -bias, NULL);
+					error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+				} 
+				cons_count += consNum_each_group[count+group_count];
+			}
+			relu_layer_count ++;
+			group_count += group_num;
+		}
+	}
+	
 	// add constraints for previously spurious labels
 	for(k=0; k < spurious_count; k++){
 		int spu_label = spurious_list[k];
@@ -3741,10 +3739,10 @@ int multi_cex_spurious_with_prima(elina_manager_t* man, elina_abstract0_t* eleme
 	return 0;
 }
 
-int multi_cex_spurious_with_prima_gcactivated(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id, double * coeffs, int rows, int cols){
+int multi_cex_spurious_with_prima_gcactivated(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id, double * coeffs, int rows, int cols, int num_relu_layers, int * groupNum_each_layer, int group_num, int * consNum_each_group, int * varsid_one_dim, double * krelu_coeffs){
 	assert(cols == 2*multi_count+1);
 	assert(multi_count<=3); assert(multi_count>=2);
-	int k, optimstatus;  long a, ix; int relu_refine_count = 0; 
+	int k, optimstatus, count;  long a, ix; int relu_refine_count = 0; 
 	size_t i, j, n;  int fea_count = 0;
 	fppoly_t *fp = fppoly_of_abstract0(element);
     size_t numlayers = fp->numlayers;
@@ -3875,6 +3873,35 @@ int multi_cex_spurious_with_prima_gcactivated(elina_manager_t* man, elina_abstra
 			}
 		}
 	}
+	
+	// add constraints from PRIMA
+	// int num_relu_layers, int* groupNum_each_layer, int group_num, int* consNum_each_group, int* varsid_one_dim, double* krelu_coeffs
+	int cons_count = 0; int relu_layer_count = 0; int group_count = 0;
+	for(i=0; i < numlayers; i++){
+		layer_t * cur_layer = fp->layers[i];
+		if(cur_layer->is_activation){
+			int group_num = groupNum_each_layer[relu_layer_count];
+ 			int aff_start = layer_var_start_idx[i-1]; int relu_start = layer_var_start_idx[i];
+			for(count = 0; count < group_num; count ++){
+				// the index of varsid starts from group_count
+				int ind1 = varsid_one_dim[3*(count+group_count)]; int ind2 = varsid_one_dim[3*(count+group_count)+1]; int ind3 = varsid_one_dim[3*(count+group_count)+2]; 
+				for(k = 0; k < consNum_each_group[count+group_count]; k++){
+					// start_con index is cons_count, have consNum_each_group[count] in total, each constraint contains 7 values
+					double bias, coeff1, coeff2, coeff3, coeff4, coeff5, coeff6;
+					bias = krelu_coeffs[(cons_count+k)*7]; coeff1 = krelu_coeffs[(cons_count+k)*7+1]; coeff2 = krelu_coeffs[(cons_count+k)*7+2]; coeff3 = krelu_coeffs[(cons_count+k)*7+3];
+					coeff4 = krelu_coeffs[(cons_count+k)*7 + 4]; coeff5 = krelu_coeffs[(cons_count+k)*7 + 5]; coeff6 = krelu_coeffs[(cons_count+k)*7 + 6];
+					double values[6] = {coeff1, coeff2, coeff3, coeff4, coeff5, coeff6}; 
+					int indexes[6] = {aff_start+ind1, aff_start+ind2, aff_start+ind3, relu_start+ind1, relu_start+ind2, relu_start+ind3};
+					error = GRBaddconstr(model, 6, indexes, values, GRB_GREATER_EQUAL, -bias, NULL);
+					error = GRBupdatemodel(model); handle_gurobi_error(error, env);
+				} 
+				cons_count += consNum_each_group[count+group_count];
+			}
+			relu_layer_count ++;
+			group_count += group_num;
+		}
+	}
+	
 	// add constraints for previously spurious labels
 	for(k=0; k < spurious_count; k++){
 		int spu_label = spurious_list[k];
@@ -3892,7 +3919,20 @@ int multi_cex_spurious_with_prima_gcactivated(elina_manager_t* man, elina_abstra
 	layer_t * output_layer = fp->layers[numlayers-1];  neuron_t ** out_nodes = output_layer->neurons;
 	elina_dim_t fea_idx_list[3]; 
 	for(k=0; k < multi_count; k++){
-		if(-out_nodes[ground_truth_label]->lb <= out_nodes[multi_cex[k]]->ub){
+		expr_t * sub = (expr_t *)malloc(sizeof(expr_t));
+		sub->inf_cst = 0; sub->sup_cst = 0;
+		sub->inf_coeff = (double*)malloc(2*sizeof(double));
+		sub->sup_coeff = (double*)malloc(2*sizeof(double));
+		sub->dim =(size_t *)malloc(2*sizeof(size_t));
+		sub->size = 2; sub->type = SPARSE;
+		sub->inf_coeff[0] = -1; sub->sup_coeff[0] = 1; sub->dim[0] = ground_truth_label;
+		sub->inf_coeff[1] = 1; sub->sup_coeff[1] = -1; sub->dim[1] = multi_cex[k];
+		double new_lb = get_lb_using_previous_layers(man, fp, &sub, fp->numlayers, false, false, false, 0, false, false, false, false);
+		if(sub){
+			free_expr(sub); sub = NULL;
+		}
+		if(new_lb >= 0){
+			// If new_lb < 0, already means that this cex is infeasible 
 			fea_idx_list[fea_count] = multi_cex[k]; fea_count ++;
 		}
 	}
@@ -3933,7 +3973,7 @@ int multi_cex_spurious_with_prima_gcactivated(elina_manager_t* man, elina_abstra
 		if(G_polyu == NULL){
 			GRBfreemodel(model); GRBfreeenv(env);
 			printf("CDD error at %d-th iteration\n", cur_iter_id);
-			return 0;
+			return -2;
 		}
 		for(a=0; a < G_polyu->rowsize; a++){
 			double bias, coeff1, coeff2, coeff3, coeff4, coeff5, coeff6, coeff7, coeff8;

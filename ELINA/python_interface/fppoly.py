@@ -582,7 +582,7 @@ def multi_cex_is_spurious(man, element, ground_truth_label, poten_cex1, poten_ce
         print(inst)
     return res
 
-def multi_cex_spurious_with_cdd(man, element, ground_truth_label, multi_cex, multi_count, spurious_list, spurious_count, cur_iter_id):
+def multi_cex_spurious_with_cdd(man, element, ground_truth_label, multi_cex, multi_count, spurious_list, spurious_count, cur_iter_id, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs):
     """
     To check if the multi adversarial labels are spurious or not at the same time
     Using cdd to compute the disjunction of the convex hulls
@@ -596,14 +596,17 @@ def multi_cex_spurious_with_cdd(man, element, ground_truth_label, multi_cex, mul
         multi_cex_spurious_with_cdd_c.restype = c_int
         spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
         multi_cex_np = np.ascontiguousarray(multi_cex, dtype=np.uintc)
-        multi_cex_spurious_with_cdd_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int]
-        res = multi_cex_spurious_with_cdd_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id)
+        consNum_each_group_np = np.ascontiguousarray(consNum_each_group, dtype=np.intc)
+        varsid_one_dim_np = np.ascontiguousarray(varsid_one_dim, dtype=np.intc)
+        groupNum_each_layer_np = np.ascontiguousarray(groupNum_each_layer, dtype=np.intc)
+        multi_cex_spurious_with_cdd_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int, c_int, ndpointer(c_int), c_int, ndpointer(c_int), ndpointer(c_int), ndpointer(ctypes.c_double)]
+        res = multi_cex_spurious_with_cdd_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id, num_relu_layers, groupNum_each_layer_np, group_num, consNum_each_group_np, varsid_one_dim_np, krelu_coeffs)
     except Exception as inst:
         print('Problem with loading/calling "multi_cex_spurious_with_cdd" from "libfppoly.so"')
         print(inst)
     return res
 
-def multi_cex_spurious_with_prima(man, element, ground_truth_label, multi_cex, multi_count, spurious_list, spurious_count, cur_iter_id, coeffs, rows, cols):
+def multi_cex_spurious_with_prima(man, element, ground_truth_label, multi_cex, multi_count, spurious_list, spurious_count, cur_iter_id, coeffs, rows, cols, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs):
     """
     To check if the multi adversarial labels are spurious or not at the same time
     Using cdd to compute the disjunction of the convex hulls
@@ -617,14 +620,17 @@ def multi_cex_spurious_with_prima(man, element, ground_truth_label, multi_cex, m
         multi_cex_spurious_with_prima_c.restype = c_int
         spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
         multi_cex_np = np.ascontiguousarray(multi_cex, dtype=np.uintc)
-        multi_cex_spurious_with_prima_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int, ndpointer(ctypes.c_double), c_int, c_int]
-        res = multi_cex_spurious_with_prima_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id, coeffs, rows, cols)
+        consNum_each_group_np = np.ascontiguousarray(consNum_each_group, dtype=np.intc)
+        varsid_one_dim_np = np.ascontiguousarray(varsid_one_dim, dtype=np.intc)
+        groupNum_each_layer_np = np.ascontiguousarray(groupNum_each_layer, dtype=np.intc)
+        multi_cex_spurious_with_prima_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int, ndpointer(ctypes.c_double), c_int, c_int, c_int, ndpointer(c_int), c_int, ndpointer(c_int), ndpointer(c_int), ndpointer(ctypes.c_double)]
+        res = multi_cex_spurious_with_prima_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id, coeffs, rows, cols, num_relu_layers, groupNum_each_layer_np, group_num, consNum_each_group_np, varsid_one_dim_np, krelu_coeffs)
     except Exception as inst:
         print('Problem with loading/calling "multi_cex_spurious_with_prima" from "libfppoly.so"')
         print(inst)
     return res
 
-def multi_cex_spurious_with_prima_gcactivated(man, element, ground_truth_label, multi_cex, multi_count, spurious_list, spurious_count, cur_iter_id, coeffs, rows, cols):
+def multi_cex_spurious_with_prima_gcactivated(man, element, ground_truth_label, multi_cex, multi_count, spurious_list, spurious_count, cur_iter_id, coeffs, rows, cols, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs):
     """
     To check if the multi adversarial labels are spurious or not at the same time
     Using cdd to compute the disjunction of the convex hulls
@@ -638,8 +644,11 @@ def multi_cex_spurious_with_prima_gcactivated(man, element, ground_truth_label, 
         multi_cex_spurious_with_prima_c.restype = c_int
         spurious_list_np = np.ascontiguousarray(spurious_list, dtype=np.uintc)
         multi_cex_np = np.ascontiguousarray(multi_cex, dtype=np.uintc)
-        multi_cex_spurious_with_prima_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int, ndpointer(ctypes.c_double), c_int, c_int]
-        res = multi_cex_spurious_with_prima_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id, coeffs, rows, cols)
+        consNum_each_group_np = np.ascontiguousarray(consNum_each_group, dtype=np.intc)
+        varsid_one_dim_np = np.ascontiguousarray(varsid_one_dim, dtype=np.intc)
+        groupNum_each_layer_np = np.ascontiguousarray(groupNum_each_layer, dtype=np.intc)
+        multi_cex_spurious_with_prima_c.argtypes = [ElinaManagerPtr, ElinaAbstract0Ptr, ElinaDim, ndpointer(c_uint), c_int, ndpointer(c_uint), c_int, c_int, ndpointer(ctypes.c_double), c_int, c_int, c_int, ndpointer(c_int), c_int, ndpointer(c_int), ndpointer(c_int), ndpointer(ctypes.c_double)]
+        res = multi_cex_spurious_with_prima_c(man, element, ground_truth_label, multi_cex_np, multi_count, spurious_list_np, spurious_count, cur_iter_id, coeffs, rows, cols, num_relu_layers, groupNum_each_layer_np, group_num, consNum_each_group_np, varsid_one_dim_np, krelu_coeffs)
     except Exception as inst:
         print('Problem with loading/calling "multi_cex_spurious_with_prima_gcactivated" from "libfppoly.so"')
         print(inst)
