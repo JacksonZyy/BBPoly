@@ -966,125 +966,6 @@ class Analyzer:
             # get the bound of input neuron to the output layer
             itr_count = itr_count + 1
             num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs = self.wholenet_krelu_cons(self.man, element, self.nn, 'refinepoly')
-            # bounds = box_for_layer(self.man, element, total_layer_num-2)
-            # print("The second last layer is ", total_layer_num - 2)
-            # itv = [bounds[i] for i in range(10)]
-            # nlb = [x.contents.inf.contents.val.dbl for x in itv]
-            # nub = [x.contents.sup.contents.val.dbl for x in itv]
-            # elina_interval_array_free(bounds,10)
-            # print(nlb)
-            # print(nub)
-            # unstable_var = [i for i in multi_list if nlb[i] < 0 < nub[i]]
-            # if(len(unstable_var) == len(multi_list) and len(multi_list)>=2 and pre_solve_status != -2):
-            #     # use prima to handle the disjunction if all the involved neurons are unstable
-            #     if(nlb[ground_truth_label] < 0 < nub[ground_truth_label]):
-            #         # if all involved neurons are unstable
-            #         KAct.type = "ReLU"
-            #         varsid = [ground_truth_label]
-            #         varsid.extend(multi_list)
-            #         # print(varsid)
-            #         size = 3**len(varsid) - 1
-            #         linexpr0 = elina_linexpr0_array_alloc(size)
-            #         i = 0
-            #         for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
-            #             if all(c == 0 for c in coeffs):
-            #                 continue
-            #             linexpr0[i] = generate_linexpr0(0, varsid, coeffs)
-            #             i = i + 1
-            #         upper_bound = get_upper_bound_for_linexpr0(self.man,element,linexpr0, size, total_layer_num-2)
-            #         input_hrep = []
-            #         i = 0
-            #         for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
-            #             if all(c == 0 for c in coeffs):
-            #                 continue
-            #             input_hrep.append([upper_bound[i]] + [-c for c in coeffs])
-            #             i = i + 1
-            #         # previous one compute the input polytope
-            #         # print(input_hrep)
-            #         kact_results = make_kactivation_obj(input_hrep, True)
-            #         rows = 0
-            #         cols = 2*len(varsid)+1
-            #         convex_coeffs = []
-            #         non_redun_cons = []
-            #         for row in kact_results.cons:
-            #             if non_redun_cons == []:
-            #                 non_redun_cons.append(row)
-            #             elif all([any([(abs(element[i]-row[i]) >= 10**-8) for i in range(len(row))]) for element in non_redun_cons]):        
-            #                 non_redun_cons.append(row)
-            #         for row in non_redun_cons:
-            #             zero_list = []
-            #             rows = rows + 1
-            #             for i in range(cols):
-            #                 if(abs(row[i])<= 10**-7):
-            #                     zero_list.append(0.0)
-            #                     convex_coeffs.append(0)
-            #                 elif(abs(row[i]-1)<= 10**-7):
-            #                     zero_list.append(1.0)
-            #                     convex_coeffs.append(1.0)
-            #                 else:
-            #                     zero_list.append(row[i])
-            #                     convex_coeffs.append(row[i])
-            #             # print(zero_list)
-            #         # print(rows, cols)
-            #         execution_flag = multi_cex_spurious_with_prima(self.man, element, ground_truth_label, multi_list, len(multi_list), spurious_list, len(spurious_list), itr_count, np.float64(convex_coeffs), rows, cols, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs)
-            #         if(execution_flag == 1):
-            #             return 1
-            #         elif(execution_flag == -1):
-            #             return -1
-            #         elif(execution_flag == -2):
-            #             pre_solve_status = -2
-            #     else:
-            #         # the ground truth label is activated
-            #         assert nlb[ground_truth_label] >= 0, "the ground truth label should be fully activated"
-            #         KAct.type = "ReLU"
-            #         # print(varsid)
-            #         size = 3**len(multi_list) - 1
-            #         linexpr0 = elina_linexpr0_array_alloc(size)
-            #         i = 0
-            #         for coeffs in itertools.product([-1, 0, 1], repeat=len(multi_list)):
-            #             if all(c == 0 for c in coeffs):
-            #                 continue
-            #             linexpr0[i] = generate_linexpr0(0, multi_list, coeffs)
-            #             i = i + 1
-            #         upper_bound = get_upper_bound_for_linexpr0(self.man,element,linexpr0, size, total_layer_num-2)
-            #         input_hrep = []
-            #         i = 0
-            #         for coeffs in itertools.product([-1, 0, 1], repeat=len(multi_list)):
-            #             if all(c == 0 for c in coeffs):
-            #                 continue
-            #             input_hrep.append([upper_bound[i]] + [-c for c in coeffs])
-            #             i = i + 1
-            #         kact_results = make_kactivation_obj(input_hrep, True)
-            #         rows = 0
-            #         cols = 2*len(multi_list)+1
-            #         convex_coeffs = []
-            #         non_redun_cons = []
-            #         for row in kact_results.cons:
-            #             if non_redun_cons == []:
-            #                 non_redun_cons.append(row)
-            #             elif all([any([(abs(element[i]-row[i]) >= 10**-8) for i in range(len(row))]) for element in non_redun_cons]):        
-            #                 non_redun_cons.append(row)
-            #         for row in non_redun_cons:
-            #             zero_list = []
-            #             rows = rows + 1
-            #             for i in range(cols):
-            #                 if(abs(row[i])<= 10**-7):
-            #                     zero_list.append(0.0)
-            #                     convex_coeffs.append(0)
-            #                 elif(abs(row[i]-1)<= 10**-7):
-            #                     zero_list.append(1.0)
-            #                     convex_coeffs.append(1.0)
-            #                 else:
-            #                     zero_list.append(row[i])
-            #                     convex_coeffs.append(row[i])
-            #         execution_flag = multi_cex_spurious_with_prima_gcactivated(self.man, element, ground_truth_label, multi_list, len(multi_list), spurious_list, len(spurious_list), itr_count, np.float64(convex_coeffs), rows, cols, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs)
-            #         if(execution_flag == 1):
-            #             return 1
-            #         elif(execution_flag == -1):
-            #             return -1
-            #         elif(execution_flag == -2):
-            #             pre_solve_status = -2
-            # else:
             if(pre_solve_status != -2):
                 execution_flag = multi_cex_spurious_with_cdd(self.man, element, ground_truth_label, multi_list, len(multi_list), spurious_list, len(spurious_list), itr_count, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs)
                 # use cdd to handle the disjunction
@@ -1094,10 +975,40 @@ class Analyzer:
                     return -1
                 elif(execution_flag == -2):
                     pre_solve_status = -2
-            else:
-                break
+                    break
+                
         if(pre_solve_status == -2):
-            # divide the multi_cex list and call two times      
+            # divide the multi_cex list and call two times, pending coding      
+            half_len = int(len(multi_list)/2)
+            clear_neurons_status(self.man, element)
+            run_deeppoly(self.man, element)
+            itr_count = 0 
+            execution_flag1 = 0
+            while(itr_count < self.MAX_ITER):
+                itr_count = itr_count + 1
+                num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs = self.wholenet_krelu_cons(self.man, element, self.nn, 'refinepoly')
+                execution_flag1 = multi_cex_spurious_with_cdd(self.man, element, ground_truth_label, multi_list[:half_len], len(multi_list[:half_len]), spurious_list, len(spurious_list), itr_count, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs)
+                print(multi_list[:half_len], len(multi_list[:half_len]))
+                # use cdd to handle the disjunction
+                if(execution_flag1 == 1):
+                    break
+                elif(execution_flag1 == -1):
+                    return -1
+            if(execution_flag1 != 1):
+                return 0
+            clear_neurons_status(self.man, element)
+            run_deeppoly(self.man, element)
+            itr_count = 0 
+            while(itr_count < self.MAX_ITER):
+                itr_count = itr_count + 1
+                num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs = self.wholenet_krelu_cons(self.man, element, self.nn, 'refinepoly')
+                execution_flag2 = multi_cex_spurious_with_cdd(self.man, element, ground_truth_label, multi_list[half_len:], len(multi_list[half_len:]), spurious_list, len(spurious_list), itr_count, num_relu_layers, groupNum_each_layer, group_num, consNum_each_group, varsid_one_dim, krelu_coeffs)
+                print(multi_list[half_len:], len(multi_list[half_len:]))
+                # use cdd to handle the disjunction
+                if(execution_flag2 == 1):
+                    return 1
+                elif(execution_flag2 == -1):
+                    return -1  
         return 0  
         
     def prima_calling_test(self):
