@@ -213,6 +213,8 @@ int multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element
 
 int multi_cex_spurious_with_prima_gcactivated(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t * multi_cex, int multi_count, elina_dim_t * spurious_list, int spurious_count, int cur_iter_id, double * coeffs, int rows, int cols, int num_relu_layers, int * groupNum_each_layer, int group_num, int * consNum_each_group, int * varsid_one_dim, double * krelu_coeffs);
 
+bool multi_cex_is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t ground_truth_label, elina_dim_t poten_cex1, elina_dim_t poten_cex2, int * spurious_list, int spurious_count, int MAX_ITER);
+
 void* clear_neurons_status(elina_manager_t* man, elina_abstract0_t* element);
 
 void* run_deeppoly(elina_manager_t* man, elina_abstract0_t* element);

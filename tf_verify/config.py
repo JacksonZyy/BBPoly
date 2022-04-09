@@ -26,6 +26,7 @@ class config:
     is_early_terminate = False
     early_termi_thre = 0
     refine_max_iter = 5
+    imageid = 0
     is_refinement = False
     is_sum_def_over_input = False
     mean = None # the mean used to normalize the data with

@@ -280,7 +280,7 @@ class Analyzer:
                     spurious_count = spurious_count + 1
                 else:
                     break
-            print("potential_adv_count is", potential_adv_count)
+            # print("potential_adv_count is", potential_adv_count)
             if(potential_adv_count == 0):
                 # print("Successfully refine the result")
                 # print(spurious_list)
@@ -550,85 +550,6 @@ class Analyzer:
         #print("End analyze() in python")
         return dominant_class, nlb, nub, label_failed, x
 
-    def prune_with_prima_encoding(self, ground_truth_label, multi_cex_count = 2):
-        """
-        analyses the network with the given ground truth label
-        
-        Returns
-        -------
-        output: int
-            index of the dominant class. If no class dominates then returns -1
-        """
-        assert ground_truth_label!=-1, "The ground truth label cannot be -1!!!!!!!!!!!!!"
-        assert self.output_constraints is None, "The output constraints are supposed to be None"
-        assert self.prop == -1, "The prop are supposed to be deactivated"
-        element, nlb, nub = self.get_abstract0()
-        # print(nlb[-2])
-        # print(nub[-2])
-        output_size = 0
-        cex_flag = False
-        output_size = self.ir_list[-1].output_length #reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
-        dominant_class = -1
-        label_failed = [] # we can use this to record the actual counterexample we find out using LP solution
-        potential_adv_labels = {} 
-        # potential_adv_labels is the dictionary where key is the adv label i and value is the deviation ground_truth_label-i
-        
-        adv_labels = []
-        sorted_adv_labels = []
-        for i in range(output_size):
-            if ground_truth_label!=i:
-                adv_labels.append(i)
-        flag = True
-        potential_adv_count = 0
-        for j in adv_labels:
-            lb = self.label_deviation_lb(self.man, element, ground_truth_label, j, self.use_default_heuristic, self.layer_by_layer, self.is_residual, self.is_blk_segmentation, self.blk_size, self.is_early_terminate, self.early_termi_thre, self.is_sum_def_over_input, self.is_refinement)
-            if lb < 0:
-                # testing if label is always greater than j
-                flag = False
-                potential_adv_labels[j] = lb
-                potential_adv_count = potential_adv_count + 1
-        if flag:
-            # if we successfully mark the groud truth label as dominant label
-            dominant_class = ground_truth_label
-        elif self.is_refinement:
-            # do the spurious region pruning refinement
-            sorted_d = dict(sorted(potential_adv_labels.items(), key=lambda x: x[1],reverse=True))
-            spurious_list = []
-            for poten_cex in sorted_d:
-                sorted_adv_labels.append(poten_cex)
-            n = 0
-            while(n < len(sorted_adv_labels)):
-                if(n+multi_cex_count <= len(sorted_adv_labels)):
-                    # self.prima_calling_test()
-                    execution_flag = self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:n+multi_cex_count], len(nlb), spurious_list)
-                    if(execution_flag == 1):
-                        spurious_list.extend(sorted_adv_labels[n:n+multi_cex_count])
-                        potential_adv_count = potential_adv_count - multi_cex_count
-                        n = n + multi_cex_count
-                    elif(execution_flag == -1):
-                        cex_flag = True
-                        break
-                    else:
-                        break
-                else:
-                    execution_flag = self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:len(sorted_adv_labels)], len(nlb), spurious_list)
-                    if(execution_flag == 1):
-                        spurious_list.extend(sorted_adv_labels[n:len(sorted_adv_labels)])
-                        potential_adv_count = potential_adv_count - (len(sorted_adv_labels) - n)
-                        n = len(sorted_adv_labels)
-                    elif(execution_flag == -1):
-                        cex_flag = True
-                        break    
-                    else:
-                        break
-
-            if(potential_adv_count == 0):
-                print("Successfully refine the result")
-                dominant_class = ground_truth_label
-            
-        elina_abstract0_free(self.man, element)
-        return dominant_class, nlb, nub, label_failed, cex_flag
-
     def prune_with_abstract_cascade(self, ground_truth_label, multi_cex_count = 4):
         """
         analyses the network with the given ground truth label
@@ -689,17 +610,6 @@ class Analyzer:
                         break    
                     else:
                         break
-                # if(last_solve_ite in [1, 2, 3, 4,5]):
-                #     execution_flag, last_solve_ite = self.cascade2_label_prune(self.man, element, ground_truth_label, sorted_adv_labels[n], spurious_list, len(spurious_list), self.MAX_ITER)
-                #     if(execution_flag == 1):
-                #         spurious_list.append(sorted_adv_labels[n])
-                #         potential_adv_count = potential_adv_count - 1
-                #         n = n + 1
-                #     elif(execution_flag == -1):
-                #         cex_flag = True
-                #         break    
-                #     else:
-                #         break
                 else:
                     if(n+multi_cex_count <= len(sorted_adv_labels)):
                         # self.prima_calling_test()
