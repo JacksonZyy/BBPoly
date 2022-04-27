@@ -96,8 +96,6 @@ class layers:
         return grad_lower, grad_upper
 
 
-
-
 class Analyzer:
     def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False, layer_by_layer = False, is_residual = False, is_blk_segmentation=False, blk_size=0, is_early_terminate = False, early_termi_thre = 0, is_sum_def_over_input = True, is_refinement = False, REFINE_MAX_ITER = 5):
         """
@@ -599,18 +597,19 @@ class Analyzer:
                 sorted_adv_labels.append(poten_cex)
             n = 0
             while(n < len(sorted_adv_labels)):
-                if(last_solve_ite > 2):
-                    execution_flag, last_solve_ite = self.cascade1_label_prune(self.man, element, ground_truth_label, sorted_adv_labels[n], spurious_list, len(spurious_list), self.MAX_ITER)
-                    if(execution_flag == 1):
-                        spurious_list.append(sorted_adv_labels[n])
-                        potential_adv_count = potential_adv_count - 1
-                        n = n + 1
-                    elif(execution_flag == -1):
-                        cex_flag = True
-                        break    
-                    else:
-                        break
-                else:
+                # if(last_solve_ite > 2):
+                #     execution_flag, last_solve_ite = self.cascade1_label_prune(self.man, element, ground_truth_label, sorted_adv_labels[n], spurious_list, len(spurious_list), self.MAX_ITER)
+                #     if(execution_flag == 1):
+                #         spurious_list.append(sorted_adv_labels[n])
+                #         potential_adv_count = potential_adv_count - 1
+                #         n = n + 1
+                #     elif(execution_flag == -1):
+                #         cex_flag = True
+                #         break    
+                #     else:
+                #         break
+                # else:
+                if(True):
                     if(n+multi_cex_count <= len(sorted_adv_labels)):
                         # self.prima_calling_test()
                         execution_flag = self.check_multi_adv_labels(element, ground_truth_label, sorted_adv_labels[n:n+multi_cex_count], len(nlb), spurious_list)

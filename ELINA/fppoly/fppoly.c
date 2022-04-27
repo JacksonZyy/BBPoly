@@ -1294,6 +1294,7 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	}
 	// If feasible, transfer this current model (all constraints and objective function to be 0) to be Multiple Scenarios
 	// So that one call can handle all scenario solving
+	double solved_lb, solved_ub;
 	error = GRBsetintattr(model, "NumScenarios", fp->num_pixels);
 	handle_gurobi_error(error, env);
 	error = GRBupdatemodel(model);
@@ -1312,7 +1313,6 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	handle_gurobi_error(error, env);
 	error = GRBoptimize(model);
 	handle_gurobi_error(error, env);
-	double solved_lb, solved_ub;
 	for(i=0; i < fp->num_pixels; i++){
 		error = GRBsetintparam(GRBgetenv(model), "ScenarioNumber", i);
 		handle_gurobi_error(error, GRBgetenv(model));
@@ -1341,6 +1341,10 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	handle_gurobi_error(error, env);
 	error = GRBupdatemodel(model);
 	handle_gurobi_error(error, env);
+	// int ScenNObjVal = 0;
+	// error = GRBgetintattr(model, "NumScenarios", &ScenNObjVal);
+	// printf("The number of scenarios is %d\n", ScenNObjVal);
+	handle_gurobi_error(error, env);
 	int counter = 0;
 	int unstable_relu_count = 0;
 	int relu_refine_count = 0; 
@@ -1359,6 +1363,9 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	}
 	// printf("The number of unstable neuron is %d\n", unstable_relu_count);
 	error = GRBsetintattr(model, "NumScenarios", unstable_relu_count);
+	// printf("The number of unstable ReLU node is %d\n", unstable_relu_count);
+	handle_gurobi_error(error, env);
+	error = GRBupdatemodel(model);
 	handle_gurobi_error(error, env);
 	int * layer_info = (int *)malloc(unstable_relu_count*sizeof(int));
 	int * index_info = (int *)malloc(unstable_relu_count*sizeof(int));
@@ -1384,6 +1391,9 @@ bool is_spurious(elina_manager_t* man, elina_abstract0_t* element, elina_dim_t g
 	error = GRBsetintattr(model, "ModelSense", 1); //minimization
 	handle_gurobi_error(error, env);
 	error = GRBupdatemodel(model);
+	handle_gurobi_error(error, env);
+	// error = GRBgetintattr(model, "NumScenarios", &ScenNObjVal);
+	// printf("The number of scenarios after RELU set up is %d\n", ScenNObjVal);
 	handle_gurobi_error(error, env);
 	error = GRBoptimize(model);
 	handle_gurobi_error(error, env);
@@ -2654,6 +2664,8 @@ int multi_cex_spurious_with_cdd(elina_manager_t* man, elina_abstract0_t* element
 		}
 		// printf("The number of unstable neuron is %d\n", unstable_relu_count);
 		error = GRBsetintattr(model, "NumScenarios", unstable_relu_count);
+		handle_gurobi_error(error, env);
+		error = GRBupdatemodel(model);
 		handle_gurobi_error(error, env);
 		int * layer_info = (int *)malloc(unstable_relu_count*sizeof(int));
 		int * index_info = (int *)malloc(unstable_relu_count*sizeof(int));

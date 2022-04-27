@@ -295,8 +295,8 @@ if not is_trained_with_pytorch:
         means = [0]
         stds = [1]
     else:
-        means = [0.5, 0.5, 0.5]
-        stds = [1, 1, 1]
+        means = [0.4914, 0.4822, 0.4465]
+        stds = [0.2023, 0.1994, 0.2010]
 
 is_trained_with_pytorch = is_trained_with_pytorch or is_onnx
 
