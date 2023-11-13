@@ -275,7 +275,7 @@ More experiment setups and experimental results can be found in [our technical r
 Contributors
 --------------
 
-* Yuyi Zhong (lead contact) - yuyizhong@comp.nus.edu.sg
+* Yuyi Zhong (lead contact) - yuyizhong@u.nus.edu
 
 * Tianzuo Luo - luotianzuo@u.nus.edu
 
